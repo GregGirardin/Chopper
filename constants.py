@@ -1,0 +1,18 @@
+
+SCREEN_WIDTH = 1200
+SCREEN_HEIGHT = 800
+
+# Think of these in terms of meters.
+MIN_WORLD_X = -10000
+MAX_WORLD_X = 10000
+
+HORIZON_DISTANCE = 10000
+
+MAX_MTN_WIDTH = 1000
+MAX_MTN_HEIGHT = 200
+MAX_MTN_DISTANCE = HORIZON_DISTANCE / 4
+MTN_PER_LAYER = 40
+
+CAM_FOV_X =  45.0/360.0 * 6.28
+CAM_FOV_Y =  30.0/360.0 * 6.28
+CAM_Z = 100 # Distance behind proj plane, NOTE: should be negative in theory.
