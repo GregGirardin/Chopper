@@ -100,11 +100,11 @@ class Tree():
 
     if len( treeImages ) == 0:
       img = Image.open( "images/tree.gif" )
-      rs_img = img.resize( ( 380 / 2, 468 / 2 ) ) # half size, medium
-      treeImages.append( ImageTk.PhotoImage( rs_img ) ) # full size, close
-      rs_img = img.resize( ( 380 / 4, 468 / 4 ) ) # half size, medium
+      rs_img = img.resize( ( 380 / 2, 468 / 2 ) ) # 1/2 size
       treeImages.append( ImageTk.PhotoImage( rs_img ) )
-      rs_img = img.resize( ( 380 / 8, 468 / 8) ) # 1/4 size, far
+      rs_img = img.resize( ( 380 / 4, 468 / 4 ) ) # 1/4 size, medium
+      treeImages.append( ImageTk.PhotoImage( rs_img ) )
+      rs_img = img.resize( ( 380 / 8, 468 / 8) ) # 1/8 size, far
       treeImages.append( ImageTk.PhotoImage( rs_img ) )
 
   def update( self, e ):
@@ -122,3 +122,44 @@ class Tree():
       e.canvas.create_image( proj.x, proj.y, image=treeImages[ 1 ] )
     else:
       e.canvas.create_image( proj.x, proj.y, image=treeImages[ 0 ] )
+
+
+baseImage = None
+class Base():
+  def __init__( self, x, y, z ):
+    global baseImage
+
+    self.p = Point( x, y, z )
+
+    if not baseImage:
+      img = Image.open( "images/base.gif" )
+      baseImage = img.resize( ( 200, 200) )
+      baseImage = ImageTk.PhotoImage( baseImage )
+
+  def update( self, e ):
+    return True
+
+  def draw( self, e ):
+    global baseImage
+
+    proj = projection( e.camera, self.p )
+    proj.x -= 70
+    proj.y -= 100
+    if proj.x > SCREEN_WIDTH + 100: # wrap / repeat the trees
+      return
+    elif proj.x < -100:
+      return
+    e.canvas.create_image( proj.x, proj.y, image=baseImage )
+
+# Debug
+class dbgPoint():
+  def __init__( self, x, y, z ):
+    self.p = Point( x, y, z )
+
+  def update( self, e ):
+    return True
+
+  def draw( self, e ):
+    proj = projection( e.camera, self.p )
+    e.canvas.create_rectangle( proj.x - 5, proj.y, proj.x + 5, proj.y, outline="red" )
+    e.canvas.create_rectangle( proj.x, proj.y - 5, proj.x, proj.y + 5, outline="red" )

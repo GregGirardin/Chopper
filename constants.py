@@ -1,6 +1,7 @@
-
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 800
+
+PI = 3.14159
 
 # Think of these in terms of meters.
 MIN_WORLD_X = -10000

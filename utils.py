@@ -168,13 +168,11 @@ def projection( c, p ):
   pProjX = c.z * math.tan( thetaX ) # where p is on the projection plane
   pProjY = c.z * math.tan( thetaY )
 
-  xNorm = pProjX / projEdgeX # Normalized coords. -1 means p is at left edge, +1 right edge..
+  xNorm = pProjX / projEdgeX # Normalized coords. +1 to -1 mean screen edges
   yNorm = pProjY / projEdgeY
 
-  # (0, 0) is the pixel at (SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2). +y is up, so flip
+  # (0, 0) is the pixel at (SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2). +y is up, so flip y
   xRaster = ( SCREEN_WIDTH / 2 ) + ( SCREEN_WIDTH / 2 ) * xNorm
   yRaster = ( SCREEN_HEIGHT / 2 ) - ( SCREEN_HEIGHT / 2 ) * yNorm
 
-  projection = Point( xRaster, yRaster, 0 )
-
-  return projection
+  return Point( xRaster, yRaster, 0 )
