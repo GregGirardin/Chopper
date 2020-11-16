@@ -20,6 +20,7 @@ class displayEngine():
   def newGame( self ):
     global chopper
 
+    self.time = 0
     self.objects = []
 
     # Sky and Ground
@@ -63,12 +64,9 @@ class displayEngine():
     pass
 
   def update( self ):
-    #if self.camera.x < 2000:
-    #  self.camera.x += 5
-    #elif self.camera.y < 50:
-    #  self.camera.y += 2
+    global chopper
 
-    # self.chopper.p.y += 1
+    self.time += 1
 
     # Update objects
     for o in self.objects:
@@ -79,28 +77,39 @@ class displayEngine():
 
     # Spawn objects
 
+    self.camera.x = chopper.p.x - 20
+
   def draw( self ):
     self.canvas.delete( ALL )
     for o in self.objects:
       o.draw( self )
 
+    # update camera
+
+
     self.root.update()
 
 def leftHandler( event ):
-  pass
+  global chopper
+  if chopper.velocity > -1:
+    chopper.velocity -= .1
+
 def rightHandler( event ):
-  pass
+  global chopper
+  if chopper.velocity < .5:
+    chopper.velocity += .1
 
 def upHandler( event ):
   global chopper
 
-  if chopper.thrust < 10.0:
-    chopper.thrust += 1
+  if chopper.vertVelocity < .6:
+    chopper.vertVelocity += .2
+
 def downHandler( event ):
   global chopper
 
-  if chopper.thrust > 0:
-    chopper.thrust -= 1
+  if chopper.vertVelocity > -.6:
+    chopper.vertVelocity -= .2
 
 def keyHandler( event ):
   # if event.char == " ":
@@ -118,7 +127,7 @@ e.root.bind( "<Key>",   keyHandler )
 e.newGame()
 
 while True:
-  time.sleep( .05 )
+  time.sleep( .02 )
 
   e.update()
   e.draw()

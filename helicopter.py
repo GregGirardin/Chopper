@@ -8,12 +8,14 @@ heloImages = {} # Dictionary of chopper images
 class Helicopter():
   def __init__( self, x, y, z ):
     self.fuel = 100
-    self.thrust = 10.0 # 0 - 10
+    self.thrust = THRUST_NONE
     self.angle = 0.0 # + is facing up
     self.p = Point( x, y, z )
     self.rotorTheta = 0.0
     self.loadImages()
     self.images = heloImages
+    self.vertVelocity = 0
+    self.velocity = 0
 
   def loadImages( self ):
     global heloImages
@@ -31,10 +33,26 @@ class Helicopter():
     self.images = heloImages
 
   def update( self, e ):
-    if self.thrust
-    self.rotorTheta += self.thrust / 10.0
+    self.rotorTheta += self.thrust / 2.0
     if self.rotorTheta > 2 * PI:
       self.rotorTheta -= 2 * PI
+
+    self.thrust = THRUST_LOW
+
+    self.p.y += self.vertVelocity
+    if self.p.y > MAX_ALTITUDE:
+      self.p.y = MAX_ALTITUDE
+      self.vertVelocity = 0
+    elif self.p.y < 0:
+      self.p.y = 0
+      self.vertVelocity = 0
+      self.thrust = THRUST_NONE
+
+    if self.vertVelocity > 0:
+      self.thrust = THRUST_HIGH
+
+    self.p.x += self.velocity
+
     return True
 
   def draw( self, e ):
@@ -45,7 +63,12 @@ class Helicopter():
     e.canvas.create_image( proj.x + 30, proj.y - 20, image=img ) # puts 0,0 where the body hits the rotor
     # rotor
     rotorLen = 70 * math.cos( self.rotorTheta )
-    e.canvas.create_rectangle( proj.x - rotorLen, proj.y - 35, proj.x + rotorLen, proj.y - 35, outline="black" )
+    e.canvas.create_rectangle( proj.x - rotorLen, proj.y - 34, proj.x + rotorLen, proj.y - 34, outline="black" )
     # tail rotor
+    e.canvas.create_line( ( proj.x + 94 ) + 20 * math.cos( self. rotorTheta ),
+                          ( proj.y - 37 ) + 20 * math.sin( self. rotorTheta ),
+                          ( proj.x + 94 ) + 20 * math.cos( self. rotorTheta + 3.14 ),
+                          ( proj.y - 37 ) + 20 * math.sin( self. rotorTheta + 3.14 ) )
+
     # shadow
     e.canvas.create_rectangle( proj.x - 40, projShadow.y, proj.x + 80, projShadow.y, outline="black" )
