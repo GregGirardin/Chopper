@@ -84,12 +84,58 @@ class Cloud():
 
   def draw( self, e ):
     proj = projection( e.camera, self.p )
-    if proj.x > SCREEN_WIDTH + 500:  # wrap / repeat the trees
+    if proj.x > SCREEN_WIDTH + 500: # Wrap
       self.p.x -= 3000
     elif proj.x < -500:
       self.p.x += 3000
     else:
       e.canvas.create_image( proj.x, proj.y, image=cloudImage )
+
+rockImage = None
+class Rock():
+  def __init__( self, x, y, z ):
+    global rockImage
+
+    self.p = Point( x, y, z )
+
+    if not rockImage:
+      img = Image.open( "images/rock1.gif" )
+      rockImage = ImageTk.PhotoImage( img )
+
+  def update( self, e ):
+    return True
+
+  def draw( self, e ):
+    proj = projection( e.camera, self.p )
+    if proj.x > SCREEN_WIDTH + 500:
+      self.p.x -= 1000
+    elif proj.x < -500:
+      self.p.x += 1000
+    else:
+      e.canvas.create_image( proj.x, proj.y, image=rockImage )
+
+grassImage = None
+class Grass():
+  def __init__( self, x, y, z ):
+    global grassImage
+
+    self.p = Point( x, y, z )
+
+    if not grassImage:
+      img = Image.open( "images/grass1.gif" )
+      grassImage = ImageTk.PhotoImage( img )
+
+  def update( self, e ):
+    return True
+
+  def draw( self, e ):
+    proj = projection( e.camera, self.p )
+    if proj.x > SCREEN_WIDTH + 500:
+      self.p.x -= 1000
+    elif proj.x < -500:
+      self.p.x += 1000
+    else:
+      e.canvas.create_image( proj.x, proj.y, image=grassImage )
 
 treeImages = []
 class Tree():

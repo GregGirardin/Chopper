@@ -24,37 +24,42 @@ class displayEngine():
     self.time = 0
     self.objects = []
 
+    # create the helo
+    chopper = Helicopter( 0, 0, 10)
+    self.objects.append( chopper )
+
     # Sky and Ground
     self.objects.append( SkyGround() )
 
-    # Create mountains
-    # Furthest first. Drawn in order so want closer in front
+    # Mountains
     for z in( MAX_MTN_DISTANCE, MAX_MTN_DISTANCE * .75, MAX_MTN_DISTANCE * .5 ):
       for _ in range( 1, MTN_PER_LAYER ):
         self.objects.append( Mountain( random.randint( MIN_WORLD_X, MAX_WORLD_X - MAX_MTN_WIDTH ),
                                        random.randint( MAX_MTN_WIDTH / 4, MAX_MTN_WIDTH ),
                                        random.randint( MAX_MTN_HEIGHT / 4, MAX_MTN_HEIGHT ),
                                        z ) )
-    # create clouds
+    # Clouds
     for z in range( 1, 10 ):
       self.objects.append( Cloud( random.randint( MIN_WORLD_X, MAX_WORLD_X ),
                                   random.randint( 150, 250 ),
                                   random.randint( 500, 1000 ) ) ) # in front of the mountains
-    # create rock layers?
+    # Rocks
+    for z in range( -5, 9, 1 ): # hmm, Z is behind projection plane but the math works.
+      self.objects.append( Rock( random.randint( -500, 500 ), 0, z ) )
 
-    # create trees
+    # Grass
+    for z in range( -5, 9, 1 ): # hmm, Z is behind projection plane but the math works.
+      self.objects.append( Grass( random.randint( -500, 500 ), 0, z ) )
+
+    # Trees
     for z in range( 500, 50, -10 ):
       self.objects.append( Tree( random.randint( -500, 500 ), 0, z ) )
 
-    # create the helo
-    chopper = Helicopter( 0, 0, 10)
-    self.objects.append( chopper )
-
-    # create the Base
+    # Base
     self.objects.append( Base( 20, 0, 20 ) )
 
-    # debug point
-    self.objects.append( dbgPoint( 0, 0, 10 ) )
+    # Debug point
+    # self.objects.append( dbgPoint( 0, 0, 10 ) )
 
     # Sort objects by decreasing Z to closer are drawn on top
     def increaseZ( o ):

@@ -50,7 +50,7 @@ class Helicopter():
     self.imagesDict = heloImages
 
   def update( self, e ):
-    self.rotorTheta -= self.rotorSpeed / 2.0 # spin the rotors
+    self.rotorTheta -= self.rotorSpeed / 2.0 # Spin the rotors
     if self.rotorTheta < 0:
       self.rotorTheta += 2 * PI
 
@@ -58,10 +58,11 @@ class Helicopter():
     if self.p.y > MAX_ALTITUDE:
       self.p.y = MAX_ALTITUDE
       self.vertVelocity = 0
-    elif self.p.y <= 0:
+    elif self.p.y <= 0: # TBD, check for crash
       self.p.y = 0
       self.vertVelocity = 0
       self.velocity = 0
+      self.tgtVelocity = TGT_VEL_STOP
 
     if self.vertVelocity > 0:
       self.rotorSpeed = ROTOR_FAST
@@ -90,35 +91,36 @@ class Helicopter():
     self.chopperDir = DIRECTION_FORWARD
     targetVelocity = self.tgtVelDict[ self.tgtVelocity ]
 
-    if targetVelocity > 0.0: # Want to go right (+x dir)
-      self.chopperDir = DIRECTION_RIGHT
-      if self.velocity < 0.0: # but still going left, angle left but 'up' to slow down before turning.
-        self.chopperDir = DIRECTION_LEFT
-        bodyAngle = ANGLE_U5
-      elif self.velocity < targetVelocity:
-        bodyAngle = ANGLE_D10
-      elif self.velocity > 0:
-        bodyAngle = ANGLE_D5
-    elif targetVelocity < 0.0:
-      self.chopperDir = DIRECTION_LEFT
-      if self.velocity > 0: # but still going right, go 'up' to slow down before turning.
-        bodyAngle = ANGLE_U5
+    if self.p.y != 0: # We're on the ground
+      if targetVelocity > 0.0: # Want to go right (+x dir)
         self.chopperDir = DIRECTION_RIGHT
-      elif self.velocity > targetVelocity:
-        bodyAngle = ANGLE_D10
-      elif self.velocity < 0:
-        bodyAngle = ANGLE_D5
-    else: # targetVelocity == 0
-      if self.velocity != 0:
-        self.chopperDir = DIRECTION_LEFT if self.velocity < 0 else DIRECTION_RIGHT
-        bodyAngle = ANGLE_0
-      else:
-        if self.tgtVelocity == TGT_VEL_LEFT_STOP:
+        if self.velocity < 0.0: # but still going left, angle left but 'up' to slow down before turning.
           self.chopperDir = DIRECTION_LEFT
-        elif self.tgtVelocity == TGT_VEL_RIGHT_STOP:
+          bodyAngle = ANGLE_U5
+        elif self.velocity < targetVelocity:
+          bodyAngle = ANGLE_D10
+        elif self.velocity > 0:
+          bodyAngle = ANGLE_D5
+      elif targetVelocity < 0.0:
+        self.chopperDir = DIRECTION_LEFT
+        if self.velocity > 0: # but still going right, go 'up' to slow down before turning.
+          bodyAngle = ANGLE_U5
           self.chopperDir = DIRECTION_RIGHT
+        elif self.velocity > targetVelocity:
+          bodyAngle = ANGLE_D10
+        elif self.velocity < 0:
+          bodyAngle = ANGLE_D5
+      else: # targetVelocity == 0
+        if self.velocity != 0:
+          self.chopperDir = DIRECTION_LEFT if self.velocity < 0 else DIRECTION_RIGHT
+          bodyAngle = ANGLE_0
         else:
-          self.chopperDir = DIRECTION_FORWARD
+          if self.tgtVelocity == TGT_VEL_LEFT_STOP:
+            self.chopperDir = DIRECTION_LEFT
+          elif self.tgtVelocity == TGT_VEL_RIGHT_STOP:
+            self.chopperDir = DIRECTION_RIGHT
+          else:
+            self.chopperDir = DIRECTION_FORWARD
     # body
     chopperAngle = self.angleDict[ bodyAngle ]
 
