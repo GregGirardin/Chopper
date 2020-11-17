@@ -26,11 +26,11 @@ MAX_ALTITUDE = 45
 
 # What's the desired velocity? We have to accelerate to it.
 TGT_VEL_STOP       =  0
-TGT_VEL_LEFT_SLOW  = -1
-TGT_VEL_LEFT_MED   = -2
+TGT_VEL_LEFT_STOP  = -1 # stopped facing left
+TGT_VEL_LEFT_SLOW  = -2
 TGT_VEL_LEFT_FAST  = -3
-TGT_VEL_RIGHT_SLOW =  1
-TGT_VEL_RIGHT_MED  =  2
+TGT_VEL_RIGHT_STOP =  1
+TGT_VEL_RIGHT_SLOW =  2
 TGT_VEL_RIGHT_FAST =  3
 
 DIRECTION_LEFT    = 0 # Chopper direction

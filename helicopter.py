@@ -7,25 +7,34 @@ heloImages = {} # Dictionary of [ name : PhotoImage ] of chopper images. Global 
 
 class Helicopter():
   def __init__( self, x, y, z ):
-    self.fuel = 100.0
-    self.rotorSpeed = ROTOR_SLOW
     self.p = Point( x, y, z )
+    self.rotorSpeed = ROTOR_SLOW
+    self.fuel = 100.0
     self.rotorTheta = 0.0
     self.loadImages()
     self.imagesDict = heloImages
     self.vertVelocity = 0.0
     self.velocity = 0.0
-    self.tgtVelocity = 0.0
+    self.tgtVelocity = TGT_VEL_STOP
+    self.chopperDir = DIRECTION_FORWARD
     # Target velocity enum -> velocity map
     self.tgtVelDict = \
     {
       TGT_VEL_STOP        :  0.0,
+      TGT_VEL_LEFT_STOP   :  0.0,
       TGT_VEL_LEFT_SLOW   : -1.0,
-      TGT_VEL_LEFT_MED    : -2.0,
-      TGT_VEL_LEFT_FAST   : -4.0,
+      TGT_VEL_LEFT_FAST   : -2.0,
+      TGT_VEL_RIGHT_STOP  :  0.0,
       TGT_VEL_RIGHT_SLOW  :  1.0,
-      TGT_VEL_RIGHT_MED   :  2.0,
-      TGT_VEL_RIGHT_FAST  :  4.0
+      TGT_VEL_RIGHT_FAST  :  2.0
+    }
+
+    self.angleDict = \
+    {
+      ANGLE_0   : 0.0,
+      ANGLE_U5  : -.087,
+      ANGLE_D5  : .087,
+      ANGLE_D10 : .174
     }
 
   def loadImages( self ):
@@ -55,19 +64,18 @@ class Helicopter():
       self.velocity = 0
 
     if self.vertVelocity > 0:
-      self.thrust = ROTOR_FAST
+      self.rotorSpeed = ROTOR_FAST
     elif self.p.y > 0:
-      self.thrust = ROTOR_SLOW
+      self.rotorSpeed = ROTOR_SLOW
 
-    # self.thrust = ROTOR_STOP
-    # self.rotorTheta = 0.0
+    targetVelocity = self.tgtVelDict[ self.tgtVelocity ]
 
-    if self.velocity < self.tgtVelocity:
-      self.velocity += .1
-    elif self.velocity > self.tgtVelocity:
-      self.velocity -= .1
-    if math.fabs( self.velocity - self.tgtVelocity ) < .1: # in case of rounding errors
-      self.velocity = self.tgtVelocity
+    if self.velocity < targetVelocity:
+      self.velocity += .05
+    elif self.velocity > targetVelocity:
+      self.velocity -= .05
+    if math.fabs( self.velocity - targetVelocity ) < .05: # in case of rounding errors
+      self.velocity = targetVelocity
 
     self.p.x += self.velocity
 
@@ -77,66 +85,70 @@ class Helicopter():
     proj = projection( e.camera, self.p )
     projShadow = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
 
-    # Determine sprite and the corresponding rotor parameters
-    # offset from projection if left is (30,-20) if right is
+    # Determine sprite and the corresponding rotor positions
     bodyAngle = ANGLE_0
-    chopperDir = DIRECTION_FORWARD
+    self.chopperDir = DIRECTION_FORWARD
+    targetVelocity = self.tgtVelDict[ self.tgtVelocity ]
 
-    if self.tgtVelocity > 0: # Want to go right (+x dir)
-      chopperDir = DIRECTION_RIGHT
-      if self.velocity < 0: # but still going left, angle left but 'up' to slow down before turning.
-        chopperDir = DIRECTION_LEFT
+    if targetVelocity > 0.0: # Want to go right (+x dir)
+      self.chopperDir = DIRECTION_RIGHT
+      if self.velocity < 0.0: # but still going left, angle left but 'up' to slow down before turning.
+        self.chopperDir = DIRECTION_LEFT
         bodyAngle = ANGLE_U5
-      elif self.velocity < self.tgtVelocity:
+      elif self.velocity < targetVelocity:
         bodyAngle = ANGLE_D10
       elif self.velocity > 0:
         bodyAngle = ANGLE_D5
-    elif self.tgtVelocity < 0:
-      chopperDir = DIRECTION_LEFT
+    elif targetVelocity < 0.0:
+      self.chopperDir = DIRECTION_LEFT
       if self.velocity > 0: # but still going right, go 'up' to slow down before turning.
         bodyAngle = ANGLE_U5
-        chopperDir = DIRECTION_RIGHT
-      elif self.velocity > self.tgtVelocity:
+        self.chopperDir = DIRECTION_RIGHT
+      elif self.velocity > targetVelocity:
         bodyAngle = ANGLE_D10
       elif self.velocity < 0:
         bodyAngle = ANGLE_D5
-    else: #self.tgtVelocity == 0
+    else: # targetVelocity == 0
       if self.velocity != 0:
-        chopperDir = DIRECTION_LEFT if self.velocity < 0 else DIRECTION_RIGHT
+        self.chopperDir = DIRECTION_LEFT if self.velocity < 0 else DIRECTION_RIGHT
         bodyAngle = ANGLE_0
       else:
-        chopperDir = DIRECTION_FORWARD
-
+        if self.tgtVelocity == TGT_VEL_LEFT_STOP:
+          self.chopperDir = DIRECTION_LEFT
+        elif self.tgtVelocity == TGT_VEL_RIGHT_STOP:
+          self.chopperDir = DIRECTION_RIGHT
+        else:
+          self.chopperDir = DIRECTION_FORWARD
     # body
-    chopperAngle = 0.0
-    if bodyAngle == ANGLE_U5:
-      chopperAngle = -.087 # if left
-    elif bodyAngle == ANGLE_D5:
-      chopperAngle = .087
-    elif bodyAngle == ANGLE_D10:
-      chopperAngle = .174
+    chopperAngle = self.angleDict[ bodyAngle ]
 
-    # make x,y = point below the rotor
+    # translate x,y to be below the rotor
     proj.y -= 30
-
-    if chopperDir == DIRECTION_LEFT:
+    if self.chopperDir == DIRECTION_LEFT:
       proj.x += 30
       chopperAngle = -chopperAngle
-      tRotorX = proj.x + 60
+      tRotorX = proj.x + 65
       rotorOffx = -35
-    elif chopperDir == DIRECTION_RIGHT:
+    elif self.chopperDir == DIRECTION_RIGHT:
       proj.x -= 24
-      tRotorX = proj.x - 60
+      tRotorX = proj.x - 65
       rotorOffx = 20
     else:
       rotorOffx = 0
 
-    tRotorY = (proj.y - 10) if bodyAngle == ANGLE_U5 else proj.y - 25
+    if bodyAngle == ANGLE_0:
+      tRotorY = proj.y - 17
+    elif bodyAngle == ANGLE_U5:
+      tRotorY = proj.y - 10
+    elif bodyAngle == ANGLE_D5:
+      tRotorY = proj.y - 23
+    elif bodyAngle == ANGLE_D10:
+      tRotorY = proj.y - 28
 
     imageKey = "body"
-    if chopperDir == DIRECTION_FORWARD:
+    if self.chopperDir == DIRECTION_FORWARD:
       imageKey += "Forward"
-    elif chopperDir == DIRECTION_LEFT:
+    elif self.chopperDir == DIRECTION_LEFT:
       imageKey += "Left"
     else:
       imageKey += "Right"
@@ -157,10 +169,10 @@ class Helicopter():
                           ( proj.x + rotorOffx ) + rotorLen * math.cos( chopperAngle + PI ),
                           ( proj.y - 12 ) + rotorLen * math.sin( chopperAngle + PI ) )
     # Tail rotor
-    if chopperDir != DIRECTION_FORWARD:
+    if self.chopperDir != DIRECTION_FORWARD:
       TAIL_ROTOR_LEN = 20
       tmpTheta = self.rotorTheta
-      if chopperDir == DIRECTION_RIGHT:
+      if self.chopperDir == DIRECTION_RIGHT:
         tmpTheta = -tmpTheta
       e.canvas.create_line( tRotorX + TAIL_ROTOR_LEN * math.cos( tmpTheta ),
                             tRotorY + TAIL_ROTOR_LEN * math.sin( tmpTheta ),

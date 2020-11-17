@@ -16,6 +16,7 @@ class displayEngine():
     self.canvas.pack()
 
     self.camera = Point( -20, 20, CAM_Z )
+    self.tgtCamOff = 0
 
   def newGame( self ):
     global chopper
@@ -77,17 +78,21 @@ class displayEngine():
 
     # Spawn objects
 
-    # update camera
+    # update camera. Determine where we want it relative to the chopper
+    # If chopper is facing left, we want the camera on the right side of the screen.
+    if chopper.chopperDir == DIRECTION_LEFT:
+      tgtCamOff = -30
+    elif chopper.chopperDir == DIRECTION_RIGHT:
+      tgtCamOff = 30
+    else:
+      tgtCamOff = 0
 
-    self.camera.x = chopper.p.x - 20
-    ''' tbd, smooth follow cam
-    delta = chopper.p.x - self.camera.x - 20
-    if math.fabs( delta ) > 1:
-      if delta > 0:
-        self.camera.x -= .2 if delta < -2 else .4
-      else:
-        self.camera.x += .2 if delta > -2 else .4
-    '''
+    if self.tgtCamOff < tgtCamOff:
+      self.tgtCamOff += 1
+    elif self.tgtCamOff > tgtCamOff:
+      self.tgtCamOff -= 1
+
+    self.camera.x = chopper.p.x + self.tgtCamOff
 
   def draw( self ):
     self.canvas.delete( ALL )
@@ -99,12 +104,12 @@ class displayEngine():
 def leftHandler( event ):
   global chopper
   if chopper.tgtVelocity > TGT_VEL_LEFT_FAST:
-    chopper.tgtVelocity -= 1.0
+    chopper.tgtVelocity -= 1
 
 def rightHandler( event ):
   global chopper
   if chopper.tgtVelocity < TGT_VEL_RIGHT_FAST:
-    chopper.tgtVelocity += 1.0
+    chopper.tgtVelocity += 1
 
 def upHandler( event ):
   global chopper

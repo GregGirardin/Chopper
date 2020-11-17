@@ -99,30 +99,37 @@ class Tree():
     self.p = Point( x, y, z )
 
     if len( treeImages ) == 0:
+      img = Image.open( "images/tree3.gif" )
+      rs_img = img.resize( ( 380 / 2, 468 / 2 ) )
+      treeImages.append( ImageTk.PhotoImage( rs_img ) )
+
       img = Image.open( "images/tree.gif" )
-      rs_img = img.resize( ( 380 / 2, 468 / 2 ) ) # 1/2 size
+      rs_img = img.resize( ( 380 / 2, 468 / 2 ) )
       treeImages.append( ImageTk.PhotoImage( rs_img ) )
-      rs_img = img.resize( ( 380 / 4, 468 / 4 ) ) # 1/4 size, medium
+      rs_img = img.resize( ( 380 / 4, 468 / 4 ) )
       treeImages.append( ImageTk.PhotoImage( rs_img ) )
-      rs_img = img.resize( ( 380 / 8, 468 / 8) ) # 1/8 size, far
+      rs_img = img.resize( ( 380 / 8, 468 / 8 ) )
       treeImages.append( ImageTk.PhotoImage( rs_img ) )
+
+    if self.p.z > 250:
+      self.imgIndex = 3
+    elif self.p.z > 125:
+      self.imgIndex = 2
+    else:
+      self.imgIndex = random.randint( 0, 2 ) # two bigger gifs..
 
   def update( self, e ):
     return True
 
   def draw( self, e ):
     proj = projection( e.camera, self.p )
+    proj.y -= 50 # make x,y the bottom of the gif
     if proj.x > SCREEN_WIDTH + 100: # wrap / repeat the trees
       self.p.x -= 1000
     elif proj.x < -100:
       self.p.x += 1000
-    if self.p.z > 250:
-      e.canvas.create_image( proj.x, proj.y, image=treeImages[ 2 ] )
-    elif self.p.z > 100:
-      e.canvas.create_image( proj.x, proj.y, image=treeImages[ 1 ] )
-    else:
-      e.canvas.create_image( proj.x, proj.y, image=treeImages[ 0 ] )
 
+    e.canvas.create_image( proj.x, proj.y, image=treeImages[ self.imgIndex ] )
 
 baseImage = None
 class Base():
