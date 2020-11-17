@@ -1,7 +1,7 @@
 #!/usr/bin/python
 from Tkinter import *
 from constants import *
-import time
+import time, math
 from utils import *
 from background import *
 from helicopter import *
@@ -77,39 +77,44 @@ class displayEngine():
 
     # Spawn objects
 
+    # update camera
+
     self.camera.x = chopper.p.x - 20
+    ''' tbd, smooth follow cam
+    delta = chopper.p.x - self.camera.x - 20
+    if math.fabs( delta ) > 1:
+      if delta > 0:
+        self.camera.x -= .2 if delta < -2 else .4
+      else:
+        self.camera.x += .2 if delta > -2 else .4
+    '''
 
   def draw( self ):
     self.canvas.delete( ALL )
     for o in self.objects:
       o.draw( self )
 
-    # update camera
-
-
     self.root.update()
 
 def leftHandler( event ):
   global chopper
-  if chopper.velocity > -1:
-    chopper.velocity -= .1
+  if chopper.tgtVelocity > TGT_VEL_LEFT_FAST:
+    chopper.tgtVelocity -= 1.0
 
 def rightHandler( event ):
   global chopper
-  if chopper.velocity < .5:
-    chopper.velocity += .1
+  if chopper.tgtVelocity < TGT_VEL_RIGHT_FAST:
+    chopper.tgtVelocity += 1.0
 
 def upHandler( event ):
   global chopper
-
   if chopper.vertVelocity < .6:
-    chopper.vertVelocity += .2
+    chopper.vertVelocity += .3
 
 def downHandler( event ):
   global chopper
-
   if chopper.vertVelocity > -.6:
-    chopper.vertVelocity -= .2
+    chopper.vertVelocity -= .3
 
 def keyHandler( event ):
   # if event.char == " ":

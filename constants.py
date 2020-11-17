@@ -18,8 +18,26 @@ CAM_FOV_X = 45.0/360.0 * 6.28
 CAM_FOV_Y = 30.0/360.0 * 6.28
 CAM_Z = 100 # Distance behind proj plane, NOTE: should be negative in theory.
 
-THRUST_NONE = 0
-THRUST_LOW  = 1
-THRUST_HIGH = 2
+ROTOR_STOP = 0
+ROTOR_SLOW = 1
+ROTOR_FAST = 2
 
-MAX_ALTITUDE = 40
+MAX_ALTITUDE = 45
+
+# What's the desired velocity? We have to accelerate to it.
+TGT_VEL_STOP       =  0
+TGT_VEL_LEFT_SLOW  = -1
+TGT_VEL_LEFT_MED   = -2
+TGT_VEL_LEFT_FAST  = -3
+TGT_VEL_RIGHT_SLOW =  1
+TGT_VEL_RIGHT_MED  =  2
+TGT_VEL_RIGHT_FAST =  3
+
+DIRECTION_LEFT    = 0 # Chopper direction
+DIRECTION_RIGHT   = 1
+DIRECTION_FORWARD = 2
+
+ANGLE_0   = 0 # Chopper angle
+ANGLE_U5  = 1
+ANGLE_D5  = 2
+ANGLE_D10 = 3
