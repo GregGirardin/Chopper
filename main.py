@@ -139,8 +139,7 @@ def keyHandler( event ):
     chopper.weapon = WEAPON_LARGE_MISSILE
   if event.char == "z":
     chopper.weapon = WEAPON_BOMB
-  #if event.char == "x":
-  #  e.addObject( Bomb( chopper.p ) )
+
 # Main
 e = displayEngine()
 

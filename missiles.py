@@ -96,20 +96,34 @@ class MissileLarge( MissileBase ):
     e.canvas.create_image( proj.x, proj.y, image=missleLargeImages[ self.d ] )
     e.canvas.create_rectangle( proj.x - 20, projShadow.y, proj.x + 20, projShadow.y, outline="black" )
 
-
 bombImage = None
 class Bomb():
   def __init__( self, p, vx, vy ):
-
-    self.p = Point( p.x, p.y, p.z, vx, vy )
+    global bombImage
+    self.p = Point( p.x, p.y, p.z )
+    self.vx = vx
+    self.vy = vy
 
     if not bombImage:
-      bombImage.append( ImageTk.PhotoImage( Image.open( "images/chopper/bomb.gif" ) ) )
+      bombImage = Image.open( "images/chopper/bomb.gif" )
+      bombImage = bombImage.resize( ( 10, 30 ) )
+      bombImage = ImageTk.PhotoImage( bombImage )
 
   def update( self, e ):
-    return True
+    if self.vy > -1.0:
+      self.vy -= .05
+    self.vx *= .95
+
+    self.p.y += self.vy
+    self.p.x += self.vx
+
+    if self.p.y <= 0.0:
+      e.addObject( BombExplosion( self.p ) )
+      return False
 
   def draw( self, e ):
     proj = projection( e.camera, self.p )
-    e.canvas.create_image( proj.x, proj.y, image=bombImage )
+    projShadow = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
 
+    e.canvas.create_image( proj.x, proj.y, image=bombImage )
+    e.canvas.create_rectangle( proj.x - 5, projShadow.y, proj.x + 5, projShadow.y, outline="black" )

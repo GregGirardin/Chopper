@@ -53,7 +53,7 @@ class Explosion():
     e.canvas.create_image( proj.x, proj.y, image=img )
 
 bombImages = []
-class Bomb(): # Explosion that looks like something fell vertically.
+class BombExplosion(): # Explosion that looks like something fell vertically.
   def __init__( self, p ):
     self.p = Point( p.x, p.y + 10, p.z )
     self.time = 0
@@ -88,4 +88,4 @@ class Bomb(): # Explosion that looks like something fell vertically.
     if proj.x > SCREEN_WIDTH + 100 or proj.x < -100:
       return
 
-    e.canvas.create_image( proj.x, proj.y, image=img )
+    e.canvas.create_image( proj.x, proj.y + 100, image=img )
