@@ -1,5 +1,4 @@
-import constants
-import math, random
+import random
 from utils import *
 from Tkinter import *
 from PIL import ImageTk, Image
@@ -29,7 +28,7 @@ class Explosion():
       for y in range( 0, 6 ):
         for x in range( 0, 8 ):
           SW = 100
-          crop = img.crop( ( 15 + x * SW, 36 + y * SW, 115 + x * SW, y * SW + 124 ) )
+          crop = img.crop( ( x * SW + 15, y * SW + 36, x * SW + 115, y * SW + 124 ) )
           crop = ImageTk.PhotoImage( crop )
           images.append( crop )
       explosionImages.append( images )
@@ -40,7 +39,6 @@ class Explosion():
     self.imgIx = self.time
     if self.imgIx >= len( explosionImages[ self.explosionIx ] ):
       return False
-
     return True
 
   def draw( self, e ):
@@ -60,7 +58,7 @@ class BombExplosion(): # Explosion that looks like something fell vertically.
     self.imgIx = 0
 
     if not bombImages:
-      img = Image.open( "images/explosions/Bomb.png" ) # tbd, not quite perfect cropping
+      img = Image.open( "images/explosions/Bomb.png" ) # TBD not quite perfect cropping
       for y in range( 0, 2 ):
         for x in range( 0, 7 ):
           SW = 82
@@ -74,7 +72,6 @@ class BombExplosion(): # Explosion that looks like something fell vertically.
 
   def update( self, e ):
     self.time += 1
-
     self.imgIx = self.time / 2
     if self.imgIx >= len( bombImages ):
       return False

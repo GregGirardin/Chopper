@@ -51,18 +51,28 @@ class MissileBase():
   def draw( self, e ):
     assert 0
 
-missleSmallImages = []
+missileImagesS = []
+exhaustImagesS = []
 class MissileSmall( MissileBase ):
   def __init__( self, p, vx, vy, d ):
     MissileBase.__init__( self, p, vx, vy, d )
 
     self.maxVelocity = 4.0
 
-    if len( missleSmallImages ) == 0:
+    if len( missileImagesS ) == 0:
       img = Image.open( "images/chopper/missileB_L.gif" )
-      missleSmallImages.append( ImageTk.PhotoImage( img ) )
+      missileImagesS.append( ImageTk.PhotoImage( img ) )
       img = Image.open( "images/chopper/missileB_R.gif" )
-      missleSmallImages.append( ImageTk.PhotoImage( img ) )
+      missileImagesS.append( ImageTk.PhotoImage( img ) )
+
+      img = Image.open( "images/chopper/exhaustL.gif" )
+      img = img.resize( ( 10, 7 ) )
+      img = ImageTk.PhotoImage( img )
+      exhaustImagesS.append( img )
+      img = Image.open( "images/chopper/exhaustR.gif" )
+      img = img.resize( ( 10, 7 ) )
+      img = ImageTk.PhotoImage( img )
+      exhaustImagesS.append( img )
 
   def update( self, e ):
     return MissileBase.update( self, e )
@@ -70,21 +80,34 @@ class MissileSmall( MissileBase ):
   def draw( self, e ):
     proj = projection( e.camera, self.p )
     projShadow = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
-    e.canvas.create_image( proj.x, proj.y, image=missleSmallImages[ self.d ] )
+    e.canvas.create_image( proj.x, proj.y, image=missileImagesS[ self.d ] )
+    if self.thrust:
+      xOff = -30 if self.d else 30
+      e.canvas.create_image( proj.x + xOff, proj.y, image=exhaustImagesS[ self.d ] )
     e.canvas.create_rectangle( proj.x - 10, projShadow.y, proj.x + 10, projShadow.y, outline="black" )
 
-missleLargeImages = []
+missileImagesL = []
+exhaustImagesL = []
 class MissileLarge( MissileBase ):
   def __init__( self, p, vx, vy, d ):
     MissileBase.__init__( self, p, vx, vy, d )
 
     self.maxVelocity = 2.5
 
-    if len( missleLargeImages ) == 0:
+    if len( missileImagesL ) == 0:
       img = Image.open( "images/chopper/missileA_L.gif" )
-      missleLargeImages.append( ImageTk.PhotoImage( img ) )
+      missileImagesL.append( ImageTk.PhotoImage( img ) )
       img = Image.open( "images/chopper/missileA_R.gif" )
-      missleLargeImages.append( ImageTk.PhotoImage( img ) )
+      missileImagesL.append( ImageTk.PhotoImage( img ) )
+
+      img = Image.open( "images/chopper/exhaustL.gif" )
+      img = img.resize( ( 20, 7 ) )
+      img = ImageTk.PhotoImage( img )
+      exhaustImagesL.append( img )
+      img = Image.open( "images/chopper/exhaustR.gif" )
+      img = img.resize( ( 20, 7 ) )
+      img = ImageTk.PhotoImage( img )
+      exhaustImagesL.append( img )
 
   def update( self, e ):
     return MissileBase.update( self, e )
@@ -93,7 +116,11 @@ class MissileLarge( MissileBase ):
     proj = projection( e.camera, self.p )
     projShadow = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
 
-    e.canvas.create_image( proj.x, proj.y, image=missleLargeImages[ self.d ] )
+    e.canvas.create_image( proj.x, proj.y, image=missileImagesL[ self.d ] )
+    if self.thrust:
+      xOff = -40 if self.d else 40
+      e.canvas.create_image( proj.x + xOff, proj.y, image=exhaustImagesL[ self.d ] )
+
     e.canvas.create_rectangle( proj.x - 20, projShadow.y, proj.x + 20, projShadow.y, outline="black" )
 
 bombImage = None
