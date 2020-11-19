@@ -117,28 +117,21 @@ class displayEngine():
     self.root.update()
 
 def leftHandler( event ):
-  if chopper.tgtVelocity > TGT_VEL_LEFT_FAST:
-    chopper.tgtVelocity -= 1
-
+  chopper.processMessage( MSG_ACCEL_L )
 def rightHandler( event ):
-  if chopper.tgtVelocity < TGT_VEL_RIGHT_FAST:
-    chopper.tgtVelocity += 1
-
+  chopper.processMessage( MSG_ACCEL_R )
 def upHandler( event ):
-  if chopper.vy < .6:
-    chopper.vy += .3
-
+  chopper.processMessage( MSG_ACCEL_U )
 def downHandler( event ):
-  if chopper.vy > -.6:
-    chopper.vy -= .3
+  chopper.processMessage( MSG_ACCEL_D )
 
 def keyHandler( event ):
   if event.char == "a":
-    chopper.weapon = WEAPON_SMALL_MISSILE
-  if event.char == "s":
-    chopper.weapon = WEAPON_LARGE_MISSILE
-  if event.char == "z":
-    chopper.weapon = WEAPON_BOMB
+    chopper.processMessage( MSG_WEAPON_MISSILE_S )
+  elif event.char == "s":
+    chopper.processMessage( MSG_WEAPON_MISSILE_L )
+  elif event.char == "z":
+    chopper.processMessage( MSG_WEAPON_BOMB )
 
 # Main
 e = displayEngine()

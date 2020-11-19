@@ -48,9 +48,6 @@ class MissileBase():
       e.addObject( Explosion( self.p ) )
       return False
 
-  def draw( self, e ):
-    assert 0
-
 missileImagesS = []
 exhaustImagesS = []
 class MissileSmall( MissileBase ):
@@ -84,7 +81,11 @@ class MissileSmall( MissileBase ):
     if self.thrust:
       xOff = -30 if self.d else 30
       e.canvas.create_image( proj.x + xOff, proj.y, image=exhaustImagesS[ self.d ] )
-    e.canvas.create_rectangle( proj.x - 10, projShadow.y, proj.x + 10, projShadow.y, outline="black" )
+    e.canvas.create_rectangle( proj.x - 10,
+                               projShadow.y,
+                               proj.x + 10,
+                               projShadow.y,
+                               outline="black" )
 
 missileImagesL = []
 exhaustImagesL = []
