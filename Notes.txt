@@ -1,4 +1,15 @@
-A little helicopter game for Python practice
+A helicopter game for Python practice. Currently in Python
 
-Requires PIL for image manipulation but otherwise uses TkInter for graphics.
-Doing audio would require something like pygame so probably won't bother
+Requires PIL. Currently in Python 2
+
+TDL:
+
+Bomb / vertical drop
+explosions
+exhaust from missiles
+Tank.
+Crashing
+radar
+
+Fuel / weapon / status indicator.
+

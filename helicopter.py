@@ -2,6 +2,7 @@ import constants
 import math, random
 from utils import *
 from PIL import ImageTk, Image
+from missiles import *
 
 heloImages = {} # Dictionary of [ name : PhotoImage ] of chopper images. Global in case we make more than one.
 
@@ -13,11 +14,12 @@ class Helicopter():
     self.rotorTheta = 0.0
     self.loadImages()
     self.imagesDict = heloImages
-    self.vertVelocity = 0.0
-    self.velocity = 0.0
+    self.vx = 0.0
+    self.vy = 0.0
     self.tgtVelocity = TGT_VEL_STOP
     self.chopperDir = DIRECTION_FORWARD
-    # Target velocity enum -> velocity map
+    self.weapon = WEAPON_NONE # this gets set and then fired in the next update()
+    # Target vx enum -> vx map
     self.tgtVelDict = \
     {
       TGT_VEL_STOP        :  0.0,
@@ -54,31 +56,41 @@ class Helicopter():
     if self.rotorTheta < 0:
       self.rotorTheta += 2 * PI
 
-    self.p.y += self.vertVelocity
+    self.p.y += self.vy
     if self.p.y > MAX_ALTITUDE:
       self.p.y = MAX_ALTITUDE
-      self.vertVelocity = 0
+      self.vy = 0
     elif self.p.y <= 0: # TBD, check for crash
       self.p.y = 0
-      self.vertVelocity = 0
-      self.velocity = 0
+      self.vy = 0
+      self.vx = 0
       self.tgtVelocity = TGT_VEL_STOP
 
-    if self.vertVelocity > 0:
+    if self.vy > 0:
       self.rotorSpeed = ROTOR_FAST
     elif self.p.y > 0:
       self.rotorSpeed = ROTOR_SLOW
 
     targetVelocity = self.tgtVelDict[ self.tgtVelocity ]
 
-    if self.velocity < targetVelocity:
-      self.velocity += .05
-    elif self.velocity > targetVelocity:
-      self.velocity -= .05
-    if math.fabs( self.velocity - targetVelocity ) < .05: # in case of rounding errors
-      self.velocity = targetVelocity
+    if self.vx < targetVelocity:
+      self.vx += .05
+    elif self.vx > targetVelocity:
+      self.vx -= .05
+    if math.fabs( self.vx - targetVelocity ) < .05: # in case of rounding errors
+      self.vx = targetVelocity
 
-    self.p.x += self.velocity
+    self.p.x += self.vx
+
+    # Weapon spawning
+    if self.weapon != WEAPON_NONE:
+      if self.weapon == WEAPON_SMALL_MISSILE:
+        e.addObject( MissileSmall( self.p, self.vx, self.vy, self.chopperDir ) )
+      elif self.weapon == WEAPON_LARGE_MISSILE:
+        e.addObject( MissileLarge( self.p, self.vx, self.vy, self.chopperDir ) )
+      elif self.weapon == WEAPON_BOMB:
+        e.addObject( Bomb( self.p, self.vx, self.vy ) )
+      self.weapon = WEAPON_NONE
 
     return True
 
@@ -94,25 +106,25 @@ class Helicopter():
     if self.p.y != 0: # We're on the ground
       if targetVelocity > 0.0: # Want to go right (+x dir)
         self.chopperDir = DIRECTION_RIGHT
-        if self.velocity < 0.0: # but still going left, angle left but 'up' to slow down before turning.
+        if self.vx < 0.0: # but still going left, angle left but 'up' to slow down before turning.
           self.chopperDir = DIRECTION_LEFT
           bodyAngle = ANGLE_U5
-        elif self.velocity < targetVelocity:
+        elif self.vx < targetVelocity:
           bodyAngle = ANGLE_D10
-        elif self.velocity > 0:
+        elif self.vx > 0:
           bodyAngle = ANGLE_D5
       elif targetVelocity < 0.0:
         self.chopperDir = DIRECTION_LEFT
-        if self.velocity > 0: # but still going right, go 'up' to slow down before turning.
+        if self.vx > 0: # but still going right, go 'up' to slow down before turning.
           bodyAngle = ANGLE_U5
           self.chopperDir = DIRECTION_RIGHT
-        elif self.velocity > targetVelocity:
+        elif self.vx > targetVelocity:
           bodyAngle = ANGLE_D10
-        elif self.velocity < 0:
+        elif self.vx < 0:
           bodyAngle = ANGLE_D5
       else: # targetVelocity == 0
-        if self.velocity != 0:
-          self.chopperDir = DIRECTION_LEFT if self.velocity < 0 else DIRECTION_RIGHT
+        if self.vx != 0:
+          self.chopperDir = DIRECTION_LEFT if self.vx < 0 else DIRECTION_RIGHT
           bodyAngle = ANGLE_0
         else:
           if self.tgtVelocity == TGT_VEL_LEFT_STOP:

@@ -5,6 +5,8 @@ import time, math
 from utils import *
 from background import *
 from helicopter import *
+from missiles import *
+from explosions import *
 
 chopper = None
 
@@ -15,7 +17,7 @@ class displayEngine():
     self.canvas = Canvas( self.root, width=SCREEN_WIDTH, height=SCREEN_HEIGHT )
     self.canvas.pack()
 
-    self.camera = Point( -20, 20, CAM_Z )
+    self.camera = Point( 0, 30, CAM_Z )
     self.tgtCamOff = 0
 
   def newGame( self ):
@@ -24,11 +26,11 @@ class displayEngine():
     self.time = 0
     self.objects = []
 
-    # create the helo
-    chopper = Helicopter( 0, 0, 10)
+    # Create the Chopper
+    chopper = Helicopter( 0, 0, 10 )
     self.objects.append( chopper )
 
-    # Sky and Ground
+    # Sky and ground
     self.objects.append( SkyGround() )
 
     # Mountains
@@ -48,7 +50,7 @@ class displayEngine():
       self.objects.append( Rock( random.randint( -500, 500 ), 0, z ) )
 
     # Grass
-    for z in range( -5, 9, 1 ): # hmm, Z is behind projection plane but the math works.
+    for z in range( -5, 9, 1 ):
       self.objects.append( Grass( random.randint( -500, 500 ), 0, z ) )
 
     # Trees
@@ -58,12 +60,18 @@ class displayEngine():
     # Base
     self.objects.append( Base( 20, 0, 20 ) )
 
-    # Debug point
-    # self.objects.append( dbgPoint( 0, 0, 10 ) )
+    # self.objects.append( dbgPoint( 0, 0, 10 ) ) # Debug point
 
     # Sort objects by decreasing Z to closer are drawn on top
     def increaseZ( o ):
       return -o.p.z
+
+    self.objects.sort( key=increaseZ )
+
+  def addObject( self, object ):
+    def increaseZ( o ):
+      return -o.p.z
+    self.objects.append( object )
     self.objects.sort( key=increaseZ )
 
   def gameOver( self ):
@@ -98,6 +106,8 @@ class displayEngine():
       self.tgtCamOff -= 1
 
     self.camera.x = chopper.p.x + self.tgtCamOff
+    if self.camera.y > 20:
+      self.camera.y -= 2
 
   def draw( self ):
     self.canvas.delete( ALL )
@@ -107,29 +117,30 @@ class displayEngine():
     self.root.update()
 
 def leftHandler( event ):
-  global chopper
   if chopper.tgtVelocity > TGT_VEL_LEFT_FAST:
     chopper.tgtVelocity -= 1
 
 def rightHandler( event ):
-  global chopper
   if chopper.tgtVelocity < TGT_VEL_RIGHT_FAST:
     chopper.tgtVelocity += 1
 
 def upHandler( event ):
-  global chopper
-  if chopper.vertVelocity < .6:
-    chopper.vertVelocity += .3
+  if chopper.vy < .6:
+    chopper.vy += .3
 
 def downHandler( event ):
-  global chopper
-  if chopper.vertVelocity > -.6:
-    chopper.vertVelocity -= .3
+  if chopper.vy > -.6:
+    chopper.vy -= .3
 
 def keyHandler( event ):
-  # if event.char == " ":
-  pass
-
+  if event.char == "a":
+    chopper.weapon = WEAPON_SMALL_MISSILE
+  if event.char == "s":
+    chopper.weapon = WEAPON_LARGE_MISSILE
+  if event.char == "z":
+    chopper.weapon = WEAPON_BOMB
+  #if event.char == "x":
+  #  e.addObject( Bomb( chopper.p ) )
 # Main
 e = displayEngine()
 

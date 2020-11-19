@@ -16,7 +16,7 @@ MTN_PER_LAYER = 20
 
 CAM_FOV_X = 45.0/360.0 * 6.28
 CAM_FOV_Y = 30.0/360.0 * 6.28
-CAM_Z = 100 # Distance behind proj plane, NOTE: should be negative in theory.
+CAM_Z = 100 # Distance behind projection plane, NOTE: should be negative in theory.
 
 ROTOR_STOP = 0
 ROTOR_SLOW = 1
@@ -24,8 +24,8 @@ ROTOR_FAST = 2
 
 MAX_ALTITUDE = 45
 
-# What's the desired velocity? We have to accelerate to it.
-TGT_VEL_STOP       =  0
+# What's the desired X velocity? We have to accelerate to it.
+TGT_VEL_STOP       =  0 # facing fwd
 TGT_VEL_LEFT_STOP  = -1 # stopped facing left
 TGT_VEL_LEFT_SLOW  = -2
 TGT_VEL_LEFT_FAST  = -3
@@ -41,3 +41,8 @@ ANGLE_0   = 0 # Chopper angle
 ANGLE_U5  = 1
 ANGLE_D5  = 2
 ANGLE_D10 = 3
+
+WEAPON_NONE = 0
+WEAPON_SMALL_MISSILE = 1
+WEAPON_LARGE_MISSILE = 2
+WEAPON_BOMB = 3

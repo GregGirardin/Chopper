@@ -146,15 +146,15 @@ class Tree():
 
     if len( treeImages ) == 0:
       img = Image.open( "images/tree3.gif" )
-      rs_img = img.resize( ( 380 / 2, 468 / 2 ) )
+      rs_img = img.resize( ( 100, 100 ) )
       treeImages.append( ImageTk.PhotoImage( rs_img ) )
 
       img = Image.open( "images/tree.gif" )
       rs_img = img.resize( ( 380 / 2, 468 / 2 ) )
       treeImages.append( ImageTk.PhotoImage( rs_img ) )
-      rs_img = img.resize( ( 380 / 4, 468 / 4 ) )
+      rs_img = img.resize( ( 380 / 6, 468 / 6 ) )
       treeImages.append( ImageTk.PhotoImage( rs_img ) )
-      rs_img = img.resize( ( 380 / 8, 468 / 8 ) )
+      rs_img = img.resize( ( 380 / 12, 468 / 12 ) )
       treeImages.append( ImageTk.PhotoImage( rs_img ) )
 
     if self.p.z > 250:
@@ -169,7 +169,7 @@ class Tree():
 
   def draw( self, e ):
     proj = projection( e.camera, self.p )
-    proj.y -= 50 # make x,y the bottom of the gif
+    proj.y -= 20 # make x,y the bottom of the gif
     if proj.x > SCREEN_WIDTH + 100: # wrap / repeat the trees
       self.p.x -= 1000
     elif proj.x < -100:
