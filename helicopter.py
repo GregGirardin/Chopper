@@ -22,6 +22,10 @@ class Helicopter():
     self.weapon = WEAPON_NONE # This gets set and then fired in the next update()
                               # Trying to keep msg processing loosely coupled.
     self.health = 100.0
+    self.countLargeMissiles = 4
+    self.countSmallMissiles = 20
+    self.countBomb = 4
+    self.bullets = 1000
 
     # Target vx enum -> vx map
     self.tgtXVelDict = \
@@ -39,8 +43,8 @@ class Helicopter():
     self.tgtYVelDict = \
     {
       TGT_VEL_STOP      : 0.0,
-      TGT_VEL_UP_SLOW   : .3,
-      TGT_VEL_UP_FAST   : .6,
+      TGT_VEL_UP_SLOW   :  .3,
+      TGT_VEL_UP_FAST   :  .6,
       TGT_VEL_DN_SLOW   : -.3,
       TGT_VEL_DN_FAST   : -.6
     }
@@ -52,6 +56,12 @@ class Helicopter():
       ANGLE_D5  : .087,
       ANGLE_D10 : .174
     }
+    # weapon images for inventory
+    self.missileSImg = ImageTk.PhotoImage( Image.open( "images/chopper/missileB_L.gif" ) )
+    self.missileLImg = ImageTk.PhotoImage( Image.open( "images/chopper/missileA_L.gif" ) )
+    bombImage = Image.open( "images/chopper/bomb.gif" )
+    bombImage = bombImage.resize( ( 10, 30 ) )
+    self.bombImg = ImageTk.PhotoImage( bombImage )
 
   def processMessage( self, message ):
     if message == MSG_ACCEL_L:
@@ -70,12 +80,18 @@ class Helicopter():
     # Let's keep that loosely coupled. Spawn in update().
     elif message == MSG_WEAPON_MISSILE_S:
       if self.chopperDir != DIRECTION_FORWARD:
-        self.weapon = WEAPON_SMALL_MISSILE
+        if self.countSmallMissiles > 0:
+          self.weapon = WEAPON_SMALL_MISSILE
+          self.countSmallMissiles -= 1
     elif message == MSG_WEAPON_MISSILE_L:
       if self.chopperDir != DIRECTION_FORWARD:
-        self.weapon = WEAPON_LARGE_MISSILE
+        if self.countLargeMissiles > 0:
+          self.countLargeMissiles -= 1
+          self.weapon = WEAPON_LARGE_MISSILE
     elif message == MSG_WEAPON_BOMB:
-      self.weapon = WEAPON_BOMB
+      if self.countBomb > 0:
+        self.countBomb -= 1
+        self.weapon = WEAPON_BOMB
 
   def loadImages( self ):
     global heloImages
@@ -308,3 +324,11 @@ class Helicopter():
     # Fuel level
     e.canvas.create_rectangle( 10, 10, 10 + 100.0 * 2, 15, fill="red" )
     e.canvas.create_rectangle( 10, 10, 10 + self.fuel * 2, 15, fill="green" )
+
+    # Number of weapons
+    for i in range( 0, self.countSmallMissiles ):
+      e.canvas.create_image( 10, 50 + 6 * i, image=self.missileSImg )
+    for i in range( 0, self.countLargeMissiles ):
+      e.canvas.create_image( 70, 50 + 6 * i, image=self.missileLImg )
+    for i in range( 0, self.countBomb ):
+      e.canvas.create_image( 10 + 10 * i, 35, image=self.bombImg )

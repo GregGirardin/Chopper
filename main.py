@@ -60,7 +60,7 @@ class displayEngine():
     # Base
     self.objects.append( Base( 20, 0, 20 ) )
 
-    # self.objects.append( dbgPoint( 0, 0, 10 ) ) # Debug point
+    self.objects.append( dbgPoint( 0, 0, 10 ) ) # Debug point
 
     # Sort objects by decreasing Z to closer are drawn on top
     def increaseZ( o ):

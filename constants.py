@@ -5,7 +5,7 @@ PI = 3.14159
 
 # Think of these in terms of meters.
 MIN_WORLD_X = -10000
-MAX_WORLD_X = 10000
+MAX_WORLD_X =  10000
 
 HORIZON_DISTANCE = 10000
 

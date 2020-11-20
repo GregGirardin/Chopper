@@ -76,7 +76,7 @@ class Cloud():
     self.p = Point( x, y, z )
 
     if not cloudImage:
-      img = Image.open( "images/cloud.gif" )
+      img = Image.open( "images/backgrounds/cloud.gif" )
       cloudImage = ImageTk.PhotoImage( img )
 
   def update( self, e ):
@@ -99,7 +99,7 @@ class Rock():
     self.p = Point( x, y, z )
 
     if not rockImage:
-      img = Image.open( "images/rock1.gif" )
+      img = Image.open( "images/backgrounds/rock1.gif" )
       rockImage = ImageTk.PhotoImage( img )
 
   def update( self, e ):
@@ -122,7 +122,7 @@ class Grass():
     self.p = Point( x, y, z )
 
     if not grassImage:
-      img = Image.open( "images/grass1.gif" )
+      img = Image.open( "images/backgrounds/grass1.gif" )
       grassImage = ImageTk.PhotoImage( img )
 
   def update( self, e ):
@@ -145,11 +145,11 @@ class Tree():
     self.p = Point( x, y, z )
 
     if len( treeImages ) == 0:
-      img = Image.open( "images/tree3.gif" )
+      img = Image.open( "images/backgrounds/tree3.gif" )
       rs_img = img.resize( ( 100, 100 ) )
       treeImages.append( ImageTk.PhotoImage( rs_img ) )
 
-      img = Image.open( "images/tree.gif" )
+      img = Image.open( "images/backgrounds/tree.gif" )
       rs_img = img.resize( ( 380 / 2, 468 / 2 ) )
       treeImages.append( ImageTk.PhotoImage( rs_img ) )
       rs_img = img.resize( ( 380 / 6, 468 / 6 ) )
