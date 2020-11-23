@@ -5,6 +5,38 @@ from explosions import *
 from Tkinter import *
 from PIL import ImageTk, Image
 
+class Bullet():
+  def __init__( self, p, v, d ):
+    self.p = Point( p.x, p.y, p.z )
+    self.time = 100
+    self.v = v
+    self.d = d
+
+  def update( self, e ):
+    self.time -= 1
+    if not self.time:
+      return False
+
+    self.p.x += self.v * math.cos( self.d )
+    self.p.y += self.v * math.sin( self.d )
+
+    if self.p.y < 0.0:
+      e.addObject( SmokeA( Point( self.p.x, self.p.y, self.p.z ) ) )
+      return False
+    return True
+
+  def draw( self, e ):
+    proj = projection( e.camera, self.p )
+    if proj.x > SCREEN_WIDTH + 100 or proj.x < -100:
+      return
+
+    e.canvas.create_line( proj.x, proj.y,
+                          proj.x + 4.0 * math.cos( self.d ),
+                          proj.y + 4.0 * math.sin( self.d ),
+                          fill="black",
+                          width=2 )
+
+
 # Base class for missiles
 class MissileBase():
   def __init__( self, p, vx, vy, d ):
@@ -48,28 +80,30 @@ class MissileBase():
       e.addObject( Explosion( self.p ) )
       return False
 
-missileImagesS = []
-exhaustImagesS = []
+
 class MissileSmall( MissileBase ):
+  missileImagesS = []
+  exhaustImagesS = []
+
   def __init__( self, p, vx, vy, d ):
     MissileBase.__init__( self, p, vx, vy, d )
 
     self.maxVelocity = 4.0
 
-    if len( missileImagesS ) == 0:
+    if len( MissileSmall.missileImagesS ) == 0:
       img = Image.open( "images/chopper/missileB_L.gif" )
-      missileImagesS.append( ImageTk.PhotoImage( img ) )
+      MissileSmall.missileImagesS.append( ImageTk.PhotoImage( img ) )
       img = Image.open( "images/chopper/missileB_R.gif" )
-      missileImagesS.append( ImageTk.PhotoImage( img ) )
+      MissileSmall.missileImagesS.append( ImageTk.PhotoImage( img ) )
 
       img = Image.open( "images/chopper/exhaustL.gif" )
       img = img.resize( ( 10, 7 ) )
       img = ImageTk.PhotoImage( img )
-      exhaustImagesS.append( img )
+      MissileSmall.exhaustImagesS.append( img )
       img = Image.open( "images/chopper/exhaustR.gif" )
       img = img.resize( ( 10, 7 ) )
       img = ImageTk.PhotoImage( img )
-      exhaustImagesS.append( img )
+      MissileSmall.exhaustImagesS.append( img )
 
   def update( self, e ):
     return MissileBase.update( self, e )
@@ -77,38 +111,40 @@ class MissileSmall( MissileBase ):
   def draw( self, e ):
     proj = projection( e.camera, self.p )
     projShadow = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
-    e.canvas.create_image( proj.x, proj.y, image=missileImagesS[ self.d ] )
+    e.canvas.create_image( proj.x, proj.y, image=MissileSmall.missileImagesS[ self.d ] )
     if self.thrust:
       xOff = -30 if self.d else 30
-      e.canvas.create_image( proj.x + xOff, proj.y, image=exhaustImagesS[ self.d ] )
+      e.canvas.create_image( proj.x + xOff, proj.y, image=MissileSmall.exhaustImagesS[ self.d ] )
     e.canvas.create_rectangle( proj.x - 10,
                                projShadow.y,
                                proj.x + 10,
                                projShadow.y,
                                outline="black" )
 
-missileImagesL = []
-exhaustImagesL = []
+
 class MissileLarge( MissileBase ):
+  missileImagesL = [ ]
+  exhaustImagesL = [ ]
+
   def __init__( self, p, vx, vy, d ):
     MissileBase.__init__( self, p, vx, vy, d )
 
     self.maxVelocity = 2.5
 
-    if len( missileImagesL ) == 0:
+    if len( MissileLarge.missileImagesL ) == 0:
       img = Image.open( "images/chopper/missileA_L.gif" )
-      missileImagesL.append( ImageTk.PhotoImage( img ) )
+      MissileLarge.missileImagesL.append( ImageTk.PhotoImage( img ) )
       img = Image.open( "images/chopper/missileA_R.gif" )
-      missileImagesL.append( ImageTk.PhotoImage( img ) )
+      MissileLarge.missileImagesL.append( ImageTk.PhotoImage( img ) )
 
       img = Image.open( "images/chopper/exhaustL.gif" )
       img = img.resize( ( 20, 7 ) )
       img = ImageTk.PhotoImage( img )
-      exhaustImagesL.append( img )
+      MissileLarge.exhaustImagesL.append( img )
       img = Image.open( "images/chopper/exhaustR.gif" )
       img = img.resize( ( 20, 7 ) )
       img = ImageTk.PhotoImage( img )
-      exhaustImagesL.append( img )
+      MissileLarge.exhaustImagesL.append( img )
 
   def update( self, e ):
     return MissileBase.update( self, e )
@@ -117,25 +153,25 @@ class MissileLarge( MissileBase ):
     proj = projection( e.camera, self.p )
     projShadow = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
 
-    e.canvas.create_image( proj.x, proj.y, image=missileImagesL[ self.d ] )
+    e.canvas.create_image( proj.x, proj.y, image=MissileLarge.missileImagesL[ self.d ] )
     if self.thrust:
       xOff = -40 if self.d else 40
-      e.canvas.create_image( proj.x + xOff, proj.y, image=exhaustImagesL[ self.d ] )
+      e.canvas.create_image( proj.x + xOff, proj.y, image=MissileLarge.exhaustImagesL[ self.d ] )
 
     e.canvas.create_rectangle( proj.x - 20, projShadow.y, proj.x + 20, projShadow.y, outline="black" )
 
-bombImage = None
 class Bomb():
+  bombImage = None
+
   def __init__( self, p, vx, vy ):
-    global bombImage
     self.p = Point( p.x, p.y, p.z )
     self.vx = vx
     self.vy = vy
 
-    if not bombImage:
-      bombImage = Image.open( "images/chopper/bomb.gif" )
-      bombImage = bombImage.resize( ( 10, 30 ) )
-      bombImage = ImageTk.PhotoImage( bombImage )
+    if not Bomb.bombImage:
+      Bomb.bombImage = Image.open( "images/chopper/bomb.gif" )
+      Bomb.bombImage = bombImage.resize( ( 10, 30 ) )
+      Bomb.bombImage = ImageTk.PhotoImage( bombImage )
 
   def update( self, e ):
     if self.vy > -1.0:
@@ -153,5 +189,6 @@ class Bomb():
     proj = projection( e.camera, self.p )
     projShadow = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
 
-    e.canvas.create_image( proj.x, proj.y, image=bombImage )
-    e.canvas.create_rectangle( proj.x - 5, projShadow.y, proj.x + 5, projShadow.y, outline="black" )
+    e.canvas.create_image( proj.x, proj.y, image=Bomb.bombImage )
+    e.canvas.create_rectangle( proj.x - 5, projShadow.y,
+                               proj.x + 5, projShadow.y, outline="black" )

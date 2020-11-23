@@ -1,5 +1,5 @@
 import constants
-import math, random
+import random
 from utils import *
 from Tkinter import *
 from PIL import ImageTk, Image
@@ -48,7 +48,7 @@ class Mountain():
     self.p = Point( x, 0, z )
 
   def update( self, e ):
-    return True # mountains don't move or disappear
+    return True # Mountains don't move or disappear
 
   def draw( self, e ):
     # world coordinates
@@ -64,20 +64,44 @@ class Mountain():
     if pL_p.x > SCREEN_WIDTH or pR_p.x < 0: # off screen?
       return
 
-    p = [ pL_p.x, pL_p.y, pT_p.x, pT_p.y, pR_p.x, pR_p.y ]
+    p = [ pL_p.x, pL_p.y,
+          pT_p.x, pT_p.y,
+          pR_p.x, pR_p.y ]
 
     e.canvas.create_polygon( p, fill="grey", outline="black" )
 
-cloudImage = None
-class Cloud():
-  def __init__( self, x, y, z ):
-    global cloudImage
+class MountainGif():
+  image = None
 
+  def __init__( self, x, y, z ):
     self.p = Point( x, y, z )
 
-    if not cloudImage:
+    if not Rock.rockImage:
+      img = Image.open( "images/backgrounds/mountain.gif" )
+      MountainGif.image = ImageTk.PhotoImage( img )
+
+  def update( self, e ):
+    return True
+
+  def draw( self, e ):
+    proj = projection( e.camera, self.p )
+    if proj.x > SCREEN_WIDTH + 500:
+      self.p.x -= 1000
+    elif proj.x < -500:
+      self.p.x += 1000
+    else:
+      e.canvas.create_image( proj.x, proj.y, image=MountainGif.image )
+
+
+class Cloud():
+  cloudImage = None
+
+  def __init__( self, x, y, z ):
+    self.p = Point( x, y, z )
+
+    if not Cloud.cloudImage:
       img = Image.open( "images/backgrounds/cloud.gif" )
-      cloudImage = ImageTk.PhotoImage( img )
+      Cloud.cloudImage = ImageTk.PhotoImage( img )
 
   def update( self, e ):
     return True
@@ -89,18 +113,17 @@ class Cloud():
     elif proj.x < -500:
       self.p.x += 3000
     else:
-      e.canvas.create_image( proj.x, proj.y, image=cloudImage )
+      e.canvas.create_image( proj.x, proj.y, image=Cloud.cloudImage )
 
-rockImage = None
 class Rock():
-  def __init__( self, x, y, z ):
-    global rockImage
+  rockImage = None
 
+  def __init__( self, x, y, z ):
     self.p = Point( x, y, z )
 
-    if not rockImage:
+    if not Rock.rockImage:
       img = Image.open( "images/backgrounds/rock1.gif" )
-      rockImage = ImageTk.PhotoImage( img )
+      Rock.rockImage = ImageTk.PhotoImage( img )
 
   def update( self, e ):
     return True
@@ -112,18 +135,19 @@ class Rock():
     elif proj.x < -500:
       self.p.x += 1000
     else:
-      e.canvas.create_image( proj.x, proj.y, image=rockImage )
+      e.canvas.create_image( proj.x, proj.y, image=Rock.rockImage )
 
-grassImage = None
 class Grass():
-  def __init__( self, x, y, z ):
-    global grassImage
+  grassImage = None
 
+  def __init__( self, x, y, z ):
     self.p = Point( x, y, z )
 
-    if not grassImage:
+    if not Grass.grassImage:
       img = Image.open( "images/backgrounds/grass1.gif" )
-      grassImage = ImageTk.PhotoImage( img )
+      img = img.resize( ( 200, 30 ) )
+
+      Grass.grassImage = ImageTk.PhotoImage( img )
 
   def update( self, e ):
     return True
@@ -135,27 +159,26 @@ class Grass():
     elif proj.x < -500:
       self.p.x += 1000
     else:
-      e.canvas.create_image( proj.x, proj.y, image=grassImage )
+      e.canvas.create_image( proj.x, proj.y, image=Grass.grassImage )
 
-treeImages = []
 class Tree():
-  def __init__( self, x, y, z ):
-    global treeImages
+  treeImages = []
 
+  def __init__( self, x, y, z ):
     self.p = Point( x, y, z )
 
-    if len( treeImages ) == 0:
+    if len( Tree.treeImages ) == 0:
       img = Image.open( "images/backgrounds/tree3.gif" )
       rs_img = img.resize( ( 100, 100 ) )
-      treeImages.append( ImageTk.PhotoImage( rs_img ) )
+      Tree.treeImages.append( ImageTk.PhotoImage( rs_img ) )
 
       img = Image.open( "images/backgrounds/tree.gif" )
       rs_img = img.resize( ( 380 / 2, 468 / 2 ) )
-      treeImages.append( ImageTk.PhotoImage( rs_img ) )
+      Tree.treeImages.append( ImageTk.PhotoImage( rs_img ) )
       rs_img = img.resize( ( 380 / 6, 468 / 6 ) )
-      treeImages.append( ImageTk.PhotoImage( rs_img ) )
+      Tree.treeImages.append( ImageTk.PhotoImage( rs_img ) )
       rs_img = img.resize( ( 380 / 12, 468 / 12 ) )
-      treeImages.append( ImageTk.PhotoImage( rs_img ) )
+      Tree.treeImages.append( ImageTk.PhotoImage( rs_img ) )
 
     if self.p.z > 250:
       self.imgIndex = 3
@@ -175,36 +198,30 @@ class Tree():
     elif proj.x < -100:
       self.p.x += 1000
 
-    e.canvas.create_image( proj.x, proj.y, image=treeImages[ self.imgIndex ] )
-
-baseImage = None
+    e.canvas.create_image( proj.x, proj.y,
+                           image=Tree.treeImages[ self.imgIndex ] )
 class Base():
-  def __init__( self, x, y, z ):
-    global baseImage
+  baseImage = None
 
+  def __init__( self, x, y, z ):
     self.p = Point( x, y, z )
 
-    if not baseImage:
+    if not Base.baseImage:
       img = Image.open( "images/base.gif" )
-      baseImage = img.resize( ( 200, 200) )
-      baseImage = ImageTk.PhotoImage( baseImage )
+      img = img.resize( ( 600, 300 ) )
+      Base.baseImage = ImageTk.PhotoImage( img )
 
   def update( self, e ):
     return True
 
   def draw( self, e ):
-    global baseImage
-
     proj = projection( e.camera, self.p )
     proj.x -= 70
     proj.y -= 100
-    if proj.x > SCREEN_WIDTH + 100: # wrap / repeat the trees
-      return
-    elif proj.x < -100:
-      return
-    e.canvas.create_image( proj.x, proj.y, image=baseImage )
+    if proj.x < SCREEN_WIDTH + 500 and proj.x > -500:
+      e.canvas.create_image( proj.x - 200, proj.y + 50, image=Base.baseImage )
 
-# Debug
+# Debug point
 class dbgPoint():
   def __init__( self, x, y, z ):
     self.p = Point( x, y, z )
@@ -214,5 +231,4 @@ class dbgPoint():
 
   def draw( self, e ):
     proj = projection( e.camera, self.p )
-    e.canvas.create_rectangle( proj.x - 5, proj.y, proj.x + 5, proj.y, outline="red" )
-    e.canvas.create_rectangle( proj.x, proj.y - 5, proj.x, proj.y + 5, outline="red" )
+    e.canvas.create_rectangle( proj.x, proj.y - 5, proj.x, proj.y, outline="red" )

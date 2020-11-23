@@ -4,16 +4,15 @@ from utils import *
 from PIL import ImageTk, Image
 from missiles import *
 
-heloImages = {} # Dictionary of [ name : PhotoImage ] of chopper images. Global in case we make more than one.
-
 class Helicopter():
+  heloImages = {}
+
   def __init__( self, x, y, z ):
     self.p = Point( x, y, z )
     self.rotorSpeed = ROTOR_SLOW
     self.fuel = 100.0
     self.rotorTheta = 0.0
     self.loadImages()
-    self.imagesDict = heloImages
     self.vx = 0.0
     self.vy = 0.0
     self.tgtXVelocity = TGT_VEL_STOP
@@ -25,18 +24,21 @@ class Helicopter():
     self.countLargeMissiles = 4
     self.countSmallMissiles = 20
     self.countBomb = 4
-    self.bullets = 1000
+    self.countBullet = 250
 
+    self.displayStickCount = 0
+    self.gunAngle = 0
+    self.gunPosition = 0 # currently just a number from 0-4
     # Target vx enum -> vx map
     self.tgtXVelDict = \
     {
       TGT_VEL_STOP        :  0.0,
       TGT_VEL_LEFT_STOP   :  0.0,
-      TGT_VEL_LEFT_SLOW   : -1.0,
-      TGT_VEL_LEFT_FAST   : -2.0,
+      TGT_VEL_LEFT_SLOW   :  -.5,
+      TGT_VEL_LEFT_FAST   : -1.0,
       TGT_VEL_RIGHT_STOP  :  0.0,
-      TGT_VEL_RIGHT_SLOW  :  1.0,
-      TGT_VEL_RIGHT_FAST  :  2.0
+      TGT_VEL_RIGHT_SLOW  :   .5,
+      TGT_VEL_RIGHT_FAST  :  1.0
     }
 
     # Target vy enum -> vy map
@@ -49,12 +51,21 @@ class Helicopter():
       TGT_VEL_DN_FAST   : -.6
     }
 
+    self.gunAngleFromPosition = \
+    {
+      0 :  10.0 / 360 * 2 * PI,
+      1 :   0.0 / 360 * 2 * PI,
+      2 : -10.0 / 360 * 2 * PI,
+      3 : -20.0 / 360 * 2 * PI,
+      4 : -45.0 / 360 * 2 * PI,
+    }
+
     self.angleDict = \
     {
       ANGLE_0   : 0.0,
       ANGLE_U5  : -.087,
-      ANGLE_D5  : .087,
-      ANGLE_D10 : .174
+      ANGLE_D5  :  .087,
+      ANGLE_D10 :  .174
     }
     # weapon images for inventory
     self.missileSImg = ImageTk.PhotoImage( Image.open( "images/chopper/missileB_L.gif" ) )
@@ -67,15 +78,20 @@ class Helicopter():
     if message == MSG_ACCEL_L:
       if self.tgtXVelocity > TGT_VEL_LEFT_FAST:
         self.tgtXVelocity -= 1
+        self.displayStickCount = DISPLAY_CONTROL_TIME
     elif message == MSG_ACCEL_R:
       if self.tgtXVelocity < TGT_VEL_RIGHT_FAST:
         self.tgtXVelocity += 1
+        self.displayStickCount = DISPLAY_CONTROL_TIME
     elif message == MSG_ACCEL_U:
       if self.tgtYVelocity < TGT_VEL_UP_FAST:
         self.tgtYVelocity += 1
+        self.displayStickCount = DISPLAY_CONTROL_TIME
     elif message == MSG_ACCEL_D:
       if self.tgtYVelocity > TGT_VEL_DN_FAST:
         self.tgtYVelocity -= 1
+        self.displayStickCount = DISPLAY_CONTROL_TIME
+
     # Don't spawn the weapon here.
     # Let's keep that loosely coupled. Spawn in update().
     elif message == MSG_WEAPON_MISSILE_S:
@@ -92,52 +108,72 @@ class Helicopter():
       if self.countBomb > 0:
         self.countBomb -= 1
         self.weapon = WEAPON_BOMB
+    elif message == MSG_WEAPON_BULLET:
+      if self.countBullet > 0:
+        self.countBullet -= 1
+        self.weapon = WEAPON_BULLET
+    elif message == MSG_GUN_UP:
+      if self.gunPosition > 0:
+        self.gunPosition -= 1
+        self.gunAngle = self.gunAngleFromPosition[ self.gunPosition ]
+    elif message == MSG_GUN_DOWN:
+      if self.gunPosition < 4:
+        self.gunPosition += 1
+        self.gunAngle = self.gunAngleFromPosition[ self.gunPosition ]
 
   def loadImages( self ):
-    global heloImages
     imageNames = ( "bodyForward",
                    "bodyLeft",  "bodyLeftD5",  "bodyLeftD10",  "bodyLeftU5",
                    "bodyRight", "bodyRightD5", "bodyRightD10", "bodyRightU5" )
 
-    if len( heloImages ) == 0:
+    if len( Helicopter.heloImages ) == 0:
       for name in imageNames:
-        heloImages[ name ] = ImageTk.PhotoImage( Image.open( "images/chopper/" + name + ".gif" ) )
-
-    self.imagesDict = heloImages
+        Helicopter.heloImages[ name ] = ImageTk.PhotoImage( Image.open( "images/chopper/" + name + ".gif" ) )
 
   def update( self, e ):
-    # Check fuel consumption
+    # Handle fuel consumption
     if self.p.y > 0.0:
-      self.fuel -= .11
+      self.fuel -= .01
       if self.vx != 0:
         self.fuel -= math.fabs( self.vx ) * .01
-    if self.fuel <= 0.0 and self.p.y > 0.0:
-      self.vy -= .1
-      self.vx *= .9
+    if self.fuel <= 0.0:
+      if self.p.y > 0.0:
+        self.vy -= .05
+        self.vx *= .95
+      else:
+        self.fuel = 0
+        self.rotorTheta = 0
 
-    self.rotorTheta -= self.rotorSpeed / 2.0 # Spin the rotors
-    if self.rotorTheta < 0:
-      self.rotorTheta += 2 * PI
+    if self.fuel > 0.0:
+      # Spin the rotors
+      self.rotorTheta -= self.rotorSpeed / 4.0
+      if self.rotorTheta < 0:
+        self.rotorTheta += 2 * PI
 
-    if self.fuel > 0.0: # Accelerate to target velocities if we have fuel
+      # Accelerate to target velocities if we have fuel
       tv = self.tgtXVelDict[ self.tgtXVelocity ]
       if self.vx < tv:
-        self.vx += .05
+        self.vx += CHOPPER_V_DELTA
       elif self.vx > tv:
-        self.vx -= .05
+        self.vx -= CHOPPER_V_DELTA
       if math.fabs( self.vx - tv ) < .01: # In case of rounding
         self.vx = tv
 
       tv = self.tgtYVelDict[ self.tgtYVelocity ]
       if self.vy < tv:
-        self.vy += .05
+        self.vy += CHOPPER_V_DELTA
       elif self.vy > tv:
-        self.vy -= .05
+        self.vy -= CHOPPER_V_DELTA
       if math.fabs( self.vy - tv ) < .01: # In case of rounding
         self.vy = tv
 
     self.p.y += self.vy
     self.p.x += self.vx
+
+    if self.p.x < MIN_WORLD_X:
+      self.tgtXVelocity = TGT_VEL_RIGHT_SLOW
+    elif self.p.x > MAX_WORLD_X:
+      self.tgtXVelocity = TGT_VEL_LEFT_SLOW
 
     if self.p.y > MAX_ALTITUDE:
       self.vy -= .1
@@ -148,6 +184,12 @@ class Helicopter():
       self.vx = 0
       self.tgtXVelocity = TGT_VEL_STOP
       self.tgtYVelocity = TGT_VEL_STOP
+      if math.fabs( self.p.x ) < 8.0: # At the base, refill
+        self.fuel = 100.0
+        self.countLargeMissiles = 4
+        self.countSmallMissiles = 20
+        self.countBomb = 4
+        self.countBullet = 250
 
     if self.vy > 0:
       self.rotorSpeed = ROTOR_FAST
@@ -156,7 +198,14 @@ class Helicopter():
 
     # Weapon spawning
     if self.weapon != WEAPON_NONE:
-      if self.weapon == WEAPON_SMALL_MISSILE:
+      if self.weapon == WEAPON_BULLET:
+        if self.chopperDir == DIRECTION_RIGHT:
+          e.addObject( Bullet( Point( self.p.x + 1, self.p.y + 1, self.p.z ),
+                               math.fabs( self.vx ) + 2.5, self.gunAngle ) )
+        elif self.chopperDir == DIRECTION_LEFT:
+          e.addObject( Bullet( Point( self.p.x - 1, self.p.y + 1, self.p.z ),
+                               math.fabs( self.vx ) + 2.5, 3.14159 - self.gunAngle ) )
+      elif self.weapon == WEAPON_SMALL_MISSILE:
         e.addObject( MissileSmall( self.p, self.vx, self.vy, self.chopperDir ) )
       elif self.weapon == WEAPON_LARGE_MISSILE:
         e.addObject( MissileLarge( self.p, self.vx, self.vy, self.chopperDir ) )
@@ -246,7 +295,7 @@ class Helicopter():
     elif bodyAngle == ANGLE_D10:
       imageKey += "D10"
 
-    img = self.imagesDict[ imageKey ]
+    img = Helicopter.heloImages[ imageKey ]
 
     e.canvas.create_image( proj.x, proj.y, image=img ) # puts 0,0 where the body hits the rotor
     # Rotor
@@ -271,56 +320,56 @@ class Helicopter():
     e.canvas.create_rectangle( proj.x - 60, projShadow.y, proj.x + 60, projShadow.y, outline="black" )
 
     # Statuses
+    if self.displayStickCount:
+      self.displayStickCount -= 1
+      # Throttle direction indicators
+      tgtVelDispDict = \
+      { # Dictionary of throttle indicator lengths
+        TGT_VEL_STOP        :  0,
+        TGT_VEL_LEFT_STOP   : -1,
+        TGT_VEL_LEFT_SLOW   : -2,
+        TGT_VEL_LEFT_FAST   : -3,
+        TGT_VEL_RIGHT_STOP  :  1,
+        TGT_VEL_RIGHT_SLOW  :  2,
+        TGT_VEL_RIGHT_FAST  :  3
+      }
+      dispX = proj.x
+      dispY = proj.y - 50 # display floating above the chopper
+      e.canvas.create_rectangle( dispX - 2, dispY + 20, dispX + 2, dispY + 25, fill="black" ) # a red block in the center
+      xLen = tgtVelDispDict[ self.tgtXVelocity ]
+      if xLen:
+        if xLen > 0:
+          for xPos in range( 0, xLen ):
+            e.canvas.create_rectangle( dispX + 3 + 5 * xPos, dispY + 20,
+                                       dispX + 8 + 5 * xPos, dispY + 25,
+                                       fill="red" )
+        else:
+          for xPos in range( xLen, 0 ):
+            e.canvas.create_rectangle( dispX + 3 * xPos,     dispY + 20,
+                                       dispX - 3 + 5 * xPos, dispY + 25,
+                                       fill="red" )
 
-    # Throttle direction indicators
-    tgtVelDispDict = \
-    { # Dictionary of throttle indicator lengths
-      TGT_VEL_STOP        :  0,
-      TGT_VEL_LEFT_STOP   : -1,
-      TGT_VEL_LEFT_SLOW   : -2,
-      TGT_VEL_LEFT_FAST   : -3,
-      TGT_VEL_RIGHT_STOP  :  1,
-      TGT_VEL_RIGHT_SLOW  :  2,
-      TGT_VEL_RIGHT_FAST  :  3
-    }
-    e.canvas.create_rectangle( SCREEN_WIDTH / 2 - 2, 20, SCREEN_WIDTH / 2 + 2, 25, fill="black" ) # a red block in the center
-    xLen = tgtVelDispDict[ self.tgtXVelocity ]
-    if xLen:
-      if xLen > 0:
-        for xPos in range( 0, xLen ):
-          e.canvas.create_rectangle( SCREEN_WIDTH / 2 + 3 + 5 * xPos, 20,
-                                     SCREEN_WIDTH / 2 + 8 + 5 * xPos, 25,
-                                     fill="red" )
-      else:
-        for xPos in range( xLen, 0 ):
-          e.canvas.create_rectangle( SCREEN_WIDTH / 2 + 3 * xPos, 20,
-                                     SCREEN_WIDTH / 2 - 3 + 5 * xPos, 25,
-                                     fill="red" )
-    tgtVelyDispDict = \
-    { # Dictionary of throttle indicator lengths
-      TGT_VEL_STOP    :  0,
-      TGT_VEL_UP_SLOW :  1,
-      TGT_VEL_UP_FAST :  2,
-      TGT_VEL_DN_SLOW : -1,
-      TGT_VEL_DN_FAST : -2
-    }
+      tgtVelyDispDict = \
+      { # Dictionary of throttle indicator lengths
+        TGT_VEL_STOP    :  0,
+        TGT_VEL_UP_SLOW :  1,
+        TGT_VEL_UP_FAST :  2,
+        TGT_VEL_DN_SLOW : -1,
+        TGT_VEL_DN_FAST : -2
+      }
 
-    yLen = tgtVelyDispDict[ self.tgtYVelocity ]
-    if yLen:
-      if yLen > 0:
-        for yPos in range( 0, yLen ):
-          e.canvas.create_rectangle( SCREEN_WIDTH / 2 - 2,
-                                     15 - 5 * yPos,
-                                     SCREEN_WIDTH / 2 + 2,
-                                     20 - 5 * yPos,
-                                     fill="red" )
-      else:
-        for yPos in range( yLen, 0 ):
-          e.canvas.create_rectangle( SCREEN_WIDTH / 2 - 2,
-                                     20 - 5 * yPos,
-                                     SCREEN_WIDTH / 2 + 2,
-                                     25 - 5 * yPos,
-                                     fill="red" )
+      yLen = tgtVelyDispDict[ self.tgtYVelocity ]
+      if yLen:
+        if yLen > 0:
+          for yPos in range( 0, yLen ):
+            e.canvas.create_rectangle( dispX - 2, dispY +  15 - 5 * yPos,
+                                       dispX + 2, dispY +  20 - 5 * yPos,
+                                       fill="red" )
+        else:
+          for yPos in range( yLen, 0 ):
+            e.canvas.create_rectangle( dispX - 2, dispY +  20 - 5 * yPos,
+                                       dispX + 2, dispY +  25 - 5 * yPos,
+                                       fill="red" )
     # Fuel level
     e.canvas.create_rectangle( 10, 10, 10 + 100.0 * 2, 15, fill="red" )
     e.canvas.create_rectangle( 10, 10, 10 + self.fuel * 2, 15, fill="green" )
