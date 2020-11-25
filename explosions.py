@@ -36,7 +36,7 @@ class Explosion():
           images.append( crop )
       Explosion.images.append( images )
 
-  def processMessage( self, message, param=None ):
+  def processMessage( self, e, message, param=None ):
     pass
 
   def update( self, e ):
@@ -80,7 +80,7 @@ class BombExplosion(): # Explosion that looks like something fell vertically.
           if y == 1 and x == 3:
             break
 
-  def processMessage( self, message, param=None ):
+  def processMessage( self, e, message, param=None ):
     pass
 
   def update( self, e ):
@@ -121,7 +121,7 @@ class SmokeA(): # Small puff of smoke
           crop = ImageTk.PhotoImage( crop )
           SmokeA.images.append( crop )
 
-  def processMessage( self, message, param=None ):
+  def processMessage( self, e, message, param=None ):
     pass
 
   def update( self, e ):
@@ -160,7 +160,7 @@ class SmokeB(): # Larger smoke puff
           crop = ImageTk.PhotoImage( crop )
           SmokeB.images.append( crop )
 
-  def processMessage( self, message, param=None ):
+  def processMessage( self, e, message, param=None ):
     pass
 
   def update( self, e ):
@@ -204,7 +204,7 @@ class SmokeV(): # Vertical smoke
         crop = ImageTk.PhotoImage( crop )
         SmokeV.images.append( crop )
 
-  def processMessage( self, message, param=None ):
+  def processMessage( self, e, message, param=None ):
     pass
 
   def update( self, e ):

@@ -185,8 +185,7 @@ def displayColRect( e, o ): # Display the projection of the collision rectangle 
   p2 = projection( e.camera, Point( r1x, r1y, o.p.z ) )
   e.canvas.create_rectangle( p1.x, p1.y, p2.x, p2.y, outline="orange" )
 
-# Debug point
-class dbgPoint():
+class dbgPoint(): # Debug point
   def __init__( self, p ):
     self.p = Point( p.x, p.y, p.z )
     self.oType = OBJECT_TYPE_NONE

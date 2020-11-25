@@ -11,6 +11,7 @@ from explosions import *
 from jeep import *
 from tank import *
 from planes import *
+from enemyAI import *
 
 chopper = None
 
@@ -22,8 +23,8 @@ class displayEngine():
     self.canvas.pack()
 
     self.camera = Point( 0, 20, CAM_Z )
-    self.tgtCamOff = 0.0
-    self.debugCoords = True # debug, flash objects x,y
+    self.currentCamOff = 0 # -50
+    self.debugCoords =     True # debug, flash objects x,y
 
   def newGame( self ):
     global chopper
@@ -47,9 +48,10 @@ class displayEngine():
                                           random.randint( MAX_MTN_WIDTH / 4, MAX_MTN_WIDTH ),
                                           random.randint( MAX_MTN_HEIGHT / 4, MAX_MTN_HEIGHT ),
                                           z ) )
-    # Mountains to indicate Borders
-    self.bg_objects.append( Mountain( MIN_WORLD_X - 50, 100, 100, -20 ) )
-    self.bg_objects.append( Mountain( MAX_WORLD_X,      100, 100, -20 ) )
+    # Borders of playing field.
+    #self.bg_objects.append( Mountain( MIN_WORLD_X - 50, 100, 100, -20 ) )
+    #self.bg_objects.append( Mountain( MAX_WORLD_X,      100, 100, -20 ) )
+    self.bg_objects.append( City( MIN_WORLD_X - 20, 0, 0 ) )
 
     # Clouds
     for z in range( 1, 10 ):
@@ -80,10 +82,12 @@ class displayEngine():
     chopper = Helicopter( 0, 0, 1 )
     self.objects.append( chopper )
 
-    # Base
-    self.bg_objects.append( Base(   20, 0, 2, label="Base I" ) )
+    # Bases
+    self.bg_objects.append( Base(    0, 0, 2, label="Base I" ) )
     self.bg_objects.append( Base( 1000, 0, 2, label="Base II" ) )
     self.bg_objects.append( Base( 2000, 0, 2, label="Base III" ) )
+
+    self.objects.append( GameManager() )
 
     # Debug stuff
     '''
@@ -97,8 +101,8 @@ class displayEngine():
     self.objects.append( Transport1( Point(  -10, 0, 0 ), DIRECTION_RIGHT ) )
     self.objects.append( Transport2( Point(  10, 0, 0 ), DIRECTION_RIGHT ) )
     self.objects.append( Truck( Point(  30, 0, 0 ), DIRECTION_RIGHT ) )
-    self.objects.append( dbgPoint( Point(  10, 10, 0 ) ) )
     '''
+    self.objects.append( dbgPoint( Point(  0, 0, 0 ) ) )
 
     # Sort objects by decreasing Z so closer are drawn on top
     def increaseZ( o ):
@@ -138,8 +142,8 @@ class displayEngine():
         obj1 = self.objects[ i ]
         obj2 = self.objects[ j ]
         if collisionCheck( self, obj1, obj2 ):
-          obj1.processMessage( MSG_COLLISION_DET, obj2 )
-          obj2.processMessage( MSG_COLLISION_DET, obj1 )
+          obj1.processMessage( self, MSG_COLLISION_DET, obj2 )
+          obj2.processMessage( self, MSG_COLLISION_DET, obj1 )
 
     # Spawn objects
 
@@ -152,12 +156,12 @@ class displayEngine():
     else:
       tgtCamOff = 0
 
-    if self.tgtCamOff < tgtCamOff:
-      self.tgtCamOff += .5
-    elif self.tgtCamOff > tgtCamOff:
-      self.tgtCamOff -= .5
+    if self.currentCamOff < tgtCamOff:
+      self.currentCamOff += .5
+    elif self.currentCamOff > tgtCamOff:
+      self.currentCamOff -= .5
 
-    self.camera.x = chopper.p.x + self.tgtCamOff
+    self.camera.x = chopper.p.x + self.currentCamOff
     if self.camera.x < MIN_WORLD_X:
       self.camera.x = MIN_WORLD_X
     elif self.camera.x > MAX_WORLD_X:
@@ -192,27 +196,27 @@ class displayEngine():
     self.root.update()
 
 def leftHandler( event ):
-  chopper.processMessage( MSG_ACCEL_L )
+  chopper.processMessage( e, MSG_ACCEL_L )
 def rightHandler( event ):
-  chopper.processMessage( MSG_ACCEL_R )
+  chopper.processMessage( e, MSG_ACCEL_R )
 def upHandler( event ):
-  chopper.processMessage( MSG_ACCEL_U )
+  chopper.processMessage( e, MSG_ACCEL_U )
 def downHandler( event ):
-  chopper.processMessage( MSG_ACCEL_D )
+  chopper.processMessage( e, MSG_ACCEL_D )
 
 def keyHandler( event ):
   if event.char == "a":
-    chopper.processMessage( MSG_WEAPON_MISSILE_S )
+    chopper.processMessage( e, MSG_WEAPON_MISSILE_S )
   elif event.char == "s":
-    chopper.processMessage( MSG_WEAPON_MISSILE_L )
+    chopper.processMessage( e, MSG_WEAPON_MISSILE_L )
   elif event.char == "z":
-    chopper.processMessage( MSG_WEAPON_BOMB )
+    chopper.processMessage( e, MSG_WEAPON_BOMB )
   elif event.char == "e":
-    chopper.processMessage( MSG_GUN_UP )
+    chopper.processMessage( e, MSG_GUN_UP )
   elif event.char == "d":
-    chopper.processMessage( MSG_GUN_DOWN )
+    chopper.processMessage( e, MSG_GUN_DOWN )
   elif event.char == " ":
-    chopper.processMessage( MSG_WEAPON_BULLET )
+    chopper.processMessage( e, MSG_WEAPON_BULLET )
 
 # Main
 e = displayEngine()

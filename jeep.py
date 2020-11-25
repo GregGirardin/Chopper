@@ -1,6 +1,7 @@
 import constants
 import math, random
 from utils import *
+from explosions import *
 from Tkinter import *
 from PIL import ImageTk, Image
 
@@ -10,12 +11,13 @@ class Jeep():
 
   def __init__( self, p, d=DIRECTION_LEFT ):
     self.oType = OBJECT_TYPE_JEEP
-    self.colRect = ( -3, 1, 3, -1 )
+    self.colRect = ( -3, 3, 3, 1 )
     self.time = 0
     self.imgIx = 0
     self.bounceCount = 0
     self.d = d
     self.p = Point( p.x, p.y, p.z )
+    self.structuralIntegrity = 100
 
     if len( Jeep.images ) == 0:
       images = []
@@ -36,8 +38,12 @@ class Jeep():
         images.append( crop )
       Jeep.images.append( images )
 
-  def processMessage( self, message, param=None ):
-    pass
+  def processMessage( self, e, message, param=None ):
+    if message == MSG_COLLISION_DET:
+      if param.oType == OBJECT_TYPE_WEAPON:
+        self.structuralIntegrity -= param.wDamage
+        if self.structuralIntegrity < 0:
+          e.addObject( BombExplosion( self.p ) )
 
   # Draw wheels with circles instead of using sprites.
   def drawWheel( self, c, x, y, radius, angle ):
@@ -58,9 +64,6 @@ class Jeep():
       theta += ( 2 * PI ) / 4
 
   def update( self, e ):
-    self.time += 1
-    if self.time > 500:
-      return False
 
     if not self.bounceCount:
       if random.randint( 0, 20 ) == 0: # Bounce occasionally, angle up / level / angle down / level
@@ -78,15 +81,25 @@ class Jeep():
 
     self.p.x += JEEP_DELTA if self.d == DIRECTION_RIGHT else -JEEP_DELTA
 
+    if self.structuralIntegrity < 0:
+      e.addStatusMessage( "Jeep destroyed!" )
+      return False
+    if self.p.x < MIN_WORLD_X:
+      self.d = DIRECTION_RIGHT
+      self.p.x = MIN_WORLD_X
+    elif self.p.x > MAX_WORLD_X:
+      self.d = DIRECTION_LEFT
+      self.p.x = MAX_WORLD_X
+
     return True
 
   def draw( self, e ):
     proj = projection( e.camera, self.p )
 
-    e.canvas.create_image( proj.x, proj.y, image=Jeep.images[ self.d ][ self.imgIx ] )
+    e.canvas.create_image( proj.x, proj.y - 30, image=Jeep.images[ self.d ][ self.imgIx ] )
     wheelOffs = [ [ -43, 40 ], [ -38, 43 ] ]
     for xOff in wheelOffs[ self.d ]:
-      self.drawWheel( e.canvas, proj.x + xOff, proj.y + 14, 12, self.p.x )
+      self.drawWheel( e.canvas, proj.x + xOff, proj.y + 14 - 30, 12, self.p.x )
 
 ##############################################################################
 class Transport1():
@@ -99,6 +112,7 @@ class Transport1():
     self.bounceCount = 0
     self.d = d
     self.p = Point( p.x, p.y, p.z )
+    self.structuralIntegrity = 200
 
     if len( Transport1.images ) == 0:
       img = Image.open( "images/vehicles/transport1.gif" )
@@ -109,7 +123,7 @@ class Transport1():
         crop = ImageTk.PhotoImage( crop )
         Transport1.images.append( crop )
 
-  def processMessage( self, message, param=None ):
+  def processMessage( self, e, message, param=None ):
     pass
 
   # Draw wheels with circles instead of using sprites.
@@ -160,6 +174,7 @@ class Transport2():
     self.bounceCount = 0
     self.d = d
     self.p = Point( p.x, p.y, p.z )
+    self.structuralIntegrity = 200
 
     if len( Transport2.images ) == 0:
       img = Image.open( "images/vehicles/transport2.gif" )
@@ -170,7 +185,7 @@ class Transport2():
         crop = ImageTk.PhotoImage( crop )
         Transport2.images.append( crop )
 
-  def processMessage( self, message, param=None ):
+  def processMessage( self, e, message, param=None ):
     pass
 
   # Draw wheels with circles instead of using sprites.
@@ -218,6 +233,7 @@ class Truck():
     self.bounceCount = 0
     self.d = d
     self.p = Point( p.x, p.y, p.z )
+    self.structuralIntegrity = 100
 
     if len( Truck.images ) == 0:
       img = Image.open( "images/vehicles/Truck1.gif" )
@@ -228,7 +244,7 @@ class Truck():
         crop = ImageTk.PhotoImage( crop )
         Truck.images.append( crop )
 
-  def processMessage( self, message, param=None ):
+  def processMessage( self, e, message, param=None ):
     pass
 
   # Draw wheels with circles instead of using sprites.

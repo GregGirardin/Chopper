@@ -22,7 +22,7 @@ class Bomber():
       SW = 512
       for x in range( 0, 2 ):
         crop = img.crop( ( x * SW, 0, x * SW + SW, 133 ) )
-        crop = crop.resize( ( int(SW / 1.5), int(133 / 1.5) ) )
+        crop = crop.resize( ( int( SW / 1.5 ), int( 133 / 1.5 ) ) )
         crop = ImageTk.PhotoImage( crop )
         Bomber.images.append( crop )
 

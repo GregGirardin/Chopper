@@ -4,8 +4,8 @@ SCREEN_HEIGHT = 800
 PI = 3.14159
 
 # Think of these in terms of meters maybe
-MIN_WORLD_X = -150
-MAX_WORLD_X =  10000
+MIN_WORLD_X = -50
+MAX_WORLD_X =  3000
 
 HORIZON_DISTANCE = 10000
 
@@ -96,3 +96,8 @@ OBJECT_TYPE_TRUCK       = 6
 OBJECT_TYPE_JET         = 7
 OBJECT_TYPE_TANK        = 8
 OBJECT_TYPE_WEAPON      = 9
+OBJECT_TYPE_MGR = 100
+
+# Game objectives
+MISSION_BASEII = 0
+MISSION_BASEIII = 1

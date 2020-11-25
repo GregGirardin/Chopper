@@ -56,25 +56,24 @@ class Mountain():
 
     e.canvas.create_polygon( p, fill="grey", outline="black" )
 
-class MountainGif():
+class City():
   image = None
 
   def __init__( self, x, y, z ):
     self.p = Point( x, y, z )
     self.oType = OBJECT_TYPE_NONE
 
-    if not Rock.rockImage:
-      img = Image.open( "images/backgrounds/mountain.gif" )
-      MountainGif.image = ImageTk.PhotoImage( img )
+    if not City.image:
+      img = Image.open( "images/backgrounds/city.png" )
+      img = img.resize( ( 1600, 800 ) )
+      City.image = ImageTk.PhotoImage( img )
 
   def draw( self, e ):
     proj = projection( e.camera, self.p )
-    if proj.x > SCREEN_WIDTH + 500:
-      self.p.x -= 1000
-    elif proj.x < -500:
-      self.p.x += 1000
-    else:
-      e.canvas.create_image( proj.x, proj.y, image=MountainGif.image )
+    proj.x -= 400 # make right edge the center
+    proj.y -= 250 # shift up.
+    if proj.x < SCREEN_WIDTH + 800 and proj.x > -800:
+      e.canvas.create_image( proj.x, proj.y, image=City.image )
 
 class Cloud():
   image = None
@@ -184,14 +183,14 @@ class Base():
     self.oType = OBJECT_TYPE_BASE
 
     if not Base.image:
-      img = Image.open( "images/base.gif" )
+      img = Image.open( "images/backgrounds/base.gif" )
       img = img.resize( ( 600, 300 ) )
       Base.image = ImageTk.PhotoImage( img )
 
   def draw( self, e ):
     proj = projection( e.camera, self.p )
-    proj.x -= 70
-    proj.y -= 100
+    proj.x -= 30
+    proj.y -= 50
     if proj.x < SCREEN_WIDTH + 500 and proj.x > -500:
-      e.canvas.create_image( proj.x - 200, proj.y + 50, image=Base.image )
-      e.canvas.create_text( proj.x - 200, proj.y + 150, text=self.label, fill='black' )
+      e.canvas.create_image( proj.x, proj.y, image=Base.image )
+      e.canvas.create_text( proj.x, proj.y + 100, text=self.label, fill='black' )

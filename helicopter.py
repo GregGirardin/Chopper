@@ -32,6 +32,9 @@ class Helicopter():
     self.displayStickCount = 0
     self.gunAngle = 0
     self.gunPosition = 0 # currently just a number from 0-4
+
+    self.structuralIntegrity = 1000
+
     # Target vx enum -> vx map
     self.tgtXVelDict = \
     {
@@ -77,7 +80,7 @@ class Helicopter():
     bombImage = bombImage.resize( ( 10, 30 ) )
     self.bombImg = ImageTk.PhotoImage( bombImage )
 
-  def processMessage( self, message, param=None ):
+  def processMessage( self, e, message, param=None ):
     if message == MSG_ACCEL_L:
       if self.tgtXVelocity > TGT_VEL_LEFT_FAST:
         self.tgtXVelocity -= 1
@@ -95,8 +98,7 @@ class Helicopter():
         self.tgtYVelocity -= 1
         self.displayStickCount = DISPLAY_CONTROL_TIME
 
-    # Don't spawn the weapon here.
-    # Let's keep that loosely coupled. Spawn in update().
+    # Don't spawn the weapon here. Let's keep that loosely coupled. Spawn in update().
     elif message == MSG_WEAPON_MISSILE_S:
       if self.chopperDir != DIRECTION_FORWARD:
         if self.countSmallMissiles > 0:
@@ -124,8 +126,8 @@ class Helicopter():
         self.gunPosition += 1
         self.gunAngle = self.gunAngleFromPosition[ self.gunPosition ]
     elif message == MSG_COLLISION_DET:
-      pass
-    
+      if param.oType == OBJECT_TYPE_WEAPON:
+        self.structuralIntegrity -= param.wDamage
 
   def loadImages( self ):
     imageNames = ( "bodyForward",
@@ -137,6 +139,11 @@ class Helicopter():
         Helicopter.heloImages[ name ] = ImageTk.PhotoImage( Image.open( "images/chopper/" + name + ".gif" ) )
 
   def update( self, e ):
+
+    if self.structuralIntegrity < 0:
+      e.addStatusMessage( "Destroyed!" )
+      return False
+
     # Handle fuel consumption
     if self.p.y > 0.0:
       self.fuel -= .01
@@ -176,10 +183,11 @@ class Helicopter():
     self.p.y += self.vy
     self.p.x += self.vx
 
-    if self.p.x < MIN_WORLD_X + 90:
+    # Stay in the playing field.
+    if self.p.x < MIN_WORLD_X:
       if self.tgtXVelocity < TGT_VEL_RIGHT_SLOW:
-        e.addStatusMessage( "Head East ->" )
-
+        e.addStatusMessage( "Stay On Mission", 50 )
+        e.addStatusMessage( "Head East ->", 50 )
       self.tgtXVelocity = TGT_VEL_RIGHT_SLOW
     elif self.p.x > MAX_WORLD_X:
       self.tgtXVelocity = TGT_VEL_LEFT_SLOW
@@ -198,7 +206,7 @@ class Helicopter():
         for obj in e.bg_objects:
           # See if we're near a base
           if obj.oType == OBJECT_TYPE_BASE:
-            if math.fabs( self.p.x - obj.p.x ) < 20.0: # At a base, refill
+            if math.fabs( self.p.x - obj.p.x ) < 10.0: # At a base, refill
               self.fuel = 100.0
               self.countLargeMissiles = 4
               self.countSmallMissiles = 20
@@ -389,6 +397,25 @@ class Helicopter():
             e.canvas.create_rectangle( dispX - 2, dispY +  20 - 5 * yPos,
                                        dispX + 2, dispY +  25 - 5 * yPos,
                                        fill="red" )
+
+    # Draw gun
+    if self.chopperDir == DIRECTION_RIGHT:
+      gx = proj.x + 50
+      gy = proj.y + 15
+      e.canvas.create_line( gx, gy,
+                            gx + 10.0 * math.cos( self.gunAngle ),
+                            gy - 10.0 * math.sin( self.gunAngle ),
+                            fill="gray",
+                            width=3 )
+    elif self.chopperDir == DIRECTION_LEFT:
+      gx = proj.x - 60
+      gy = proj.y + 15
+      e.canvas.create_line( gx, gy,
+                            gx - 10.0 * math.cos( -self.gunAngle ),
+                            gy + 10.0 * math.sin( -self.gunAngle ),
+                            fill="gray",
+                            width=3 )
+
     # Fuel level
     e.canvas.create_rectangle( 10, 10, 10 + 100.0 * 2, 15, fill="red" )
     e.canvas.create_rectangle( 10, 10, 10 + self.fuel * 2, 15, fill="green" )

@@ -15,6 +15,7 @@ class Tank():
     self.p = Point( p.x, p.y, p.z )
     self.cannonAngle = 3 # 0 - 3
     self.colRect = (-4, 4, 4, 0)
+    self.structuralIntegrity = 500
 
     if len( Tank.tankImages ) == 0:
       img = Image.open( "images/vehicles/Tank.gif" ) # 256x128 rectangular sprites
@@ -53,7 +54,7 @@ class Tank():
         lenList.append( segLen )
       self.tpDis.append( lenList )
 
-  def processMessage( self, message, param=None ):
+  def processMessage( self, e, message, param=None ):
     pass
 
   def update( self, e ):

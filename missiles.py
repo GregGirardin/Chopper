@@ -8,6 +8,7 @@ from PIL import ImageTk, Image
 class Bullet():
   def __init__( self, p, v, d ):
     self.oType = OBJECT_TYPE_WEAPON
+    self.wDamage = 1
     self.p = Point( p.x, p.y, p.z )
     self.colRect = ( 0, 0, 1, 1 )
     self.time = 100
@@ -16,7 +17,7 @@ class Bullet():
 
   def update( self, e ):
     self.time -= 1
-    if not self.time:
+    if self.time < 0:
       return False
 
     self.p.x += self.v * math.cos( self.d )
@@ -26,6 +27,11 @@ class Bullet():
       e.addObject( SmokeA( Point( self.p.x, self.p.y, self.p.z ) ) )
       return False
     return True
+
+  def processMessage( self, e, message, param=None ):
+
+    if message == MSG_COLLISION_DET:
+      self.time = 0
 
   def draw( self, e ):
     proj = projection( e.camera, self.p )
@@ -51,8 +57,10 @@ class MissileBase():
     self.thrust = False
     self.d = d # Direction
 
-  def processMessage( self, message, param=None ):
-    pass
+  def processMessage( self, e, message, param=None ):
+
+    if message == MSG_COLLISION_DET:
+      self.time = 0
 
   def update( self, e ):
     self.time += 1
@@ -92,7 +100,7 @@ class MissileSmall( MissileBase ):
 
   def __init__( self, p, vx, vy, d ):
     MissileBase.__init__( self, p, vx, vy, d )
-
+    self.wDamage = 5
     self.maxVelocity = 4.0
 
     if len( MissileSmall.missileImagesS ) == 0:
@@ -128,7 +136,7 @@ class MissileLarge( MissileBase ):
 
   def __init__( self, p, vx, vy, d ):
     MissileBase.__init__( self, p, vx, vy, d )
-
+    self.wDamage = 20
     self.maxVelocity = 2.5
 
     if len( MissileLarge.missileImagesL ) == 0:
@@ -165,6 +173,7 @@ class Bomb():
 
   def __init__( self, p, vx, vy ):
     self.oType = OBJECT_TYPE_WEAPON
+    self.wDamage = 100
     self.colRect = ( -.5, 1, .5, 0 )
     self.p = Point( p.x, p.y, p.z )
     self.vx = vx
@@ -175,8 +184,11 @@ class Bomb():
       bombImage = bombImage.resize( ( 10, 30 ) )
       Bomb.bombImage = ImageTk.PhotoImage( bombImage )
 
-  def processMessage( self, message, param=None ):
-    pass
+  def processMessage( self, e, message, param=None ):
+
+    if message == MSG_COLLISION_DET:
+      e.addObject( BombExplosion( self.p ) )
+      self.time = 0
 
   def update( self, e ):
     if self.vy > -1.0:
