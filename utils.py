@@ -12,6 +12,16 @@ For now we'll stick with 2D
 import math
 from constants import *
 
+def distance( x1, y1, x2, y2 ):
+  return math.sqrt( ( x1 - x2 ) ** 2 + ( y1 - y2 ) ** 2 )
+
+# given p1, p2, return p3 which is the point dis along the line from p1 to p2
+def pointAlong( x1, y1, x2, y2, dis ):
+  dis /= distance( x1, y1, x2, y2 ) # turn distance in units to a fraction
+  x3 = x1 + ( x2 - x1 ) * dis
+  y3 = y1 + ( y2 - y1 ) * dis
+  return x3, y3
+
 class Point():
   def __init__( self, x=0, y=0, z=0 ):
     self.x = x
@@ -112,38 +122,6 @@ def vectorDiff( f, t ):
   d = dir( dx, dy )
   return Vector( m, d )
 
-# Base class for all objects in the world
-class WorldObject():
-  # Attributes every object has.
-  def __init__( self, type, p, a=0.0, v=None, colRadius=0, mass=1.0, weapon=False ):
-    if not v:
-      v = Vector( 0, 0 )
-    self.v = v
-    self.spin = 0.0
-    self.p = p # position
-    self.a = a # angle
-    self.type = type
-    self.accel = 0.0
-    self.weapon = weapon # Explode even on slow contact
-    self.colRadius = colRadius
-    self.colList = [] # a list of CollisionObject
-    self.mass = mass
-
-  def offScreen( self ):
-    if self.p.x < -SCREEN_BUFFER or self.p.x > SCREEN_WIDTH + SCREEN_BUFFER or \
-       self.p.y < -SCREEN_BUFFER or self.p.y > SCREEN_HEIGHT + SCREEN_BUFFER:
-      return True
-    else:
-      return False
-
-  def update( self, e ):
-    self.a += self.spin
-    if self.a < 0:
-      self.a += TAU
-    elif self.a > TAU:
-      self.a -= TAU
-    self.p.move( self.v )
-    self.v.add( Vector( self.accel, self.a ) )
 
 '''
 Given a Camera at c and a point at p, compute the screen coordinates
@@ -176,3 +154,50 @@ def projection( c, p ):
   yRaster = ( SCREEN_HEIGHT / 2 ) - ( SCREEN_HEIGHT / 2 ) * yNorm
 
   return Point( xRaster, yRaster, 0 )
+
+# See if these two objects have collided. Objects must have a Point p indicating
+# their world position and a colRect tuple indicating the (x left, y top, x right, y bottom)
+# collision rectang;e in relative world coords to p
+# We assume constant Z and ignore.
+def collisionCheck( e, obj1, obj2 ):
+  l1x = obj1.p.x + obj1.colRect[ 0 ]
+  l1y = obj1.p.y + obj1.colRect[ 1 ]
+  r1x = obj1.p.x + obj1.colRect[ 2 ]
+  r1y = obj1.p.y + obj1.colRect[ 3 ]
+
+  l2x = obj2.p.x + obj2.colRect[ 0 ]
+  l2y = obj2.p.y + obj2.colRect[ 1 ]
+  r2x = obj2.p.x + obj2.colRect[ 2 ]
+  r2y = obj2.p.y + obj2.colRect[ 3 ]
+
+  if l1x >= r2x or l2x >= r1x or l1y <= r2y or l2y <= r1y:
+    return False
+
+  return True
+
+def displayColRect( e, o ): # Display the projection of the collision rectangle for debug.
+  l1x = o.p.x + o.colRect[ 0 ]
+  l1y = o.p.y + o.colRect[ 1 ]
+  r1x = o.p.x + o.colRect[ 2 ]
+  r1y = o.p.y + o.colRect[ 3 ]
+
+  p1 = projection( e.camera, Point( l1x, l1y, o.p.z ) )
+  p2 = projection( e.camera, Point( r1x, r1y, o.p.z ) )
+  e.canvas.create_rectangle( p1.x, p1.y, p2.x, p2.y, outline="orange" )
+
+# Debug point
+class dbgPoint():
+  def __init__( self, p ):
+    self.p = Point( p.x, p.y, p.z )
+    self.oType = OBJECT_TYPE_NONE
+    self.colRect = ( -1, -1, 1, 1 )
+
+  def processMessage( self, message, param=None ):
+    pass
+
+  def update( self, e ):
+    return True
+
+  def draw( self, e ):
+    proj = projection( e.camera, self.p )
+    e.canvas.create_rectangle( proj.x - 1, proj.y - 1, proj.x, proj.y, outline="red" )

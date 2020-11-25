@@ -7,25 +7,15 @@ from PIL import ImageTk, Image
 class SkyGround():
   def  __init__( self ):
     self.p = Point( 0, 0, HORIZON_DISTANCE )
-
-  def update( self, e ):
-    return True
+    self.oType = OBJECT_TYPE_NONE
 
   def draw( self, e ):
     hProj = projection( e.camera, self.p )
     # sky
-    p = [ 0, 0,
-          SCREEN_WIDTH, 0,
-          SCREEN_WIDTH, hProj.y,
-          0, hProj.y ]
-
+    p = [ 0, 0, SCREEN_WIDTH, 0, SCREEN_WIDTH, hProj.y, 0, hProj.y ]
     e.canvas.create_polygon( p, fill="lightblue", outline="black" )
     # ground
-    p = [ 0, hProj.y,
-          SCREEN_WIDTH, hProj.y,
-          SCREEN_WIDTH, SCREEN_HEIGHT,
-          0, SCREEN_HEIGHT ]
-
+    p = [ 0, hProj.y, SCREEN_WIDTH, hProj.y, SCREEN_WIDTH, SCREEN_HEIGHT, 0, SCREEN_HEIGHT ]
     e.canvas.create_polygon( p, fill="darkgreen", outline="black" )
 
 class Mountain():
@@ -46,9 +36,7 @@ class Mountain():
     self.z = z
     self.color = "gray"
     self.p = Point( x, 0, z )
-
-  def update( self, e ):
-    return True # Mountains don't move or disappear
+    self.oType = OBJECT_TYPE_NONE
 
   def draw( self, e ):
     # world coordinates
@@ -64,9 +52,7 @@ class Mountain():
     if pL_p.x > SCREEN_WIDTH or pR_p.x < 0: # off screen?
       return
 
-    p = [ pL_p.x, pL_p.y,
-          pT_p.x, pT_p.y,
-          pR_p.x, pR_p.y ]
+    p = [ pL_p.x, pL_p.y, pT_p.x, pT_p.y, pR_p.x, pR_p.y ]
 
     e.canvas.create_polygon( p, fill="grey", outline="black" )
 
@@ -75,13 +61,11 @@ class MountainGif():
 
   def __init__( self, x, y, z ):
     self.p = Point( x, y, z )
+    self.oType = OBJECT_TYPE_NONE
 
     if not Rock.rockImage:
       img = Image.open( "images/backgrounds/mountain.gif" )
       MountainGif.image = ImageTk.PhotoImage( img )
-
-  def update( self, e ):
-    return True
 
   def draw( self, e ):
     proj = projection( e.camera, self.p )
@@ -92,19 +76,16 @@ class MountainGif():
     else:
       e.canvas.create_image( proj.x, proj.y, image=MountainGif.image )
 
-
 class Cloud():
-  cloudImage = None
+  image = None
 
   def __init__( self, x, y, z ):
     self.p = Point( x, y, z )
+    self.oType = OBJECT_TYPE_NONE
 
-    if not Cloud.cloudImage:
+    if not Cloud.image:
       img = Image.open( "images/backgrounds/cloud.gif" )
-      Cloud.cloudImage = ImageTk.PhotoImage( img )
-
-  def update( self, e ):
-    return True
+      Cloud.image = ImageTk.PhotoImage( img )
 
   def draw( self, e ):
     proj = projection( e.camera, self.p )
@@ -113,20 +94,18 @@ class Cloud():
     elif proj.x < -500:
       self.p.x += 3000
     else:
-      e.canvas.create_image( proj.x, proj.y, image=Cloud.cloudImage )
+      e.canvas.create_image( proj.x, proj.y, image=Cloud.image )
 
 class Rock():
-  rockImage = None
+  image = None
 
   def __init__( self, x, y, z ):
     self.p = Point( x, y, z )
+    self.oType = OBJECT_TYPE_NONE
 
-    if not Rock.rockImage:
+    if not Rock.image:
       img = Image.open( "images/backgrounds/rock1.gif" )
-      Rock.rockImage = ImageTk.PhotoImage( img )
-
-  def update( self, e ):
-    return True
+      Rock.image = ImageTk.PhotoImage( img )
 
   def draw( self, e ):
     proj = projection( e.camera, self.p )
@@ -135,22 +114,20 @@ class Rock():
     elif proj.x < -500:
       self.p.x += 1000
     else:
-      e.canvas.create_image( proj.x, proj.y, image=Rock.rockImage )
+      e.canvas.create_image( proj.x, proj.y, image=Rock.image )
 
 class Grass():
-  grassImage = None
+  image = None
 
   def __init__( self, x, y, z ):
     self.p = Point( x, y, z )
+    self.oType = OBJECT_TYPE_NONE
 
-    if not Grass.grassImage:
+    if not Grass.image:
       img = Image.open( "images/backgrounds/grass1.gif" )
       img = img.resize( ( 200, 30 ) )
 
-      Grass.grassImage = ImageTk.PhotoImage( img )
-
-  def update( self, e ):
-    return True
+      Grass.image = ImageTk.PhotoImage( img )
 
   def draw( self, e ):
     proj = projection( e.camera, self.p )
@@ -159,26 +136,27 @@ class Grass():
     elif proj.x < -500:
       self.p.x += 1000
     else:
-      e.canvas.create_image( proj.x, proj.y, image=Grass.grassImage )
+      e.canvas.create_image( proj.x, proj.y, image=Grass.image )
 
 class Tree():
-  treeImages = []
+  images = []
 
   def __init__( self, x, y, z ):
     self.p = Point( x, y, z )
+    self.oType = OBJECT_TYPE_NONE
 
-    if len( Tree.treeImages ) == 0:
+    if len( Tree.images ) == 0:
       img = Image.open( "images/backgrounds/tree3.gif" )
       rs_img = img.resize( ( 100, 100 ) )
-      Tree.treeImages.append( ImageTk.PhotoImage( rs_img ) )
+      Tree.images.append( ImageTk.PhotoImage( rs_img ) )
 
       img = Image.open( "images/backgrounds/tree.gif" )
       rs_img = img.resize( ( 380 / 2, 468 / 2 ) )
-      Tree.treeImages.append( ImageTk.PhotoImage( rs_img ) )
+      Tree.images.append( ImageTk.PhotoImage( rs_img ) )
       rs_img = img.resize( ( 380 / 6, 468 / 6 ) )
-      Tree.treeImages.append( ImageTk.PhotoImage( rs_img ) )
+      Tree.images.append( ImageTk.PhotoImage( rs_img ) )
       rs_img = img.resize( ( 380 / 12, 468 / 12 ) )
-      Tree.treeImages.append( ImageTk.PhotoImage( rs_img ) )
+      Tree.images.append( ImageTk.PhotoImage( rs_img ) )
 
     if self.p.z > 250:
       self.imgIndex = 3
@@ -186,9 +164,6 @@ class Tree():
       self.imgIndex = 2
     else:
       self.imgIndex = random.randint( 0, 2 ) # two bigger gifs..
-
-  def update( self, e ):
-    return True
 
   def draw( self, e ):
     proj = projection( e.camera, self.p )
@@ -198,37 +173,25 @@ class Tree():
     elif proj.x < -100:
       self.p.x += 1000
 
-    e.canvas.create_image( proj.x, proj.y,
-                           image=Tree.treeImages[ self.imgIndex ] )
+    e.canvas.create_image( proj.x, proj.y, image=Tree.images[ self.imgIndex ] )
+
 class Base():
-  baseImage = None
+  image = None
 
-  def __init__( self, x, y, z ):
+  def __init__( self, x, y, z, label=None ):
     self.p = Point( x, y, z )
+    self.label = label
+    self.oType = OBJECT_TYPE_BASE
 
-    if not Base.baseImage:
+    if not Base.image:
       img = Image.open( "images/base.gif" )
       img = img.resize( ( 600, 300 ) )
-      Base.baseImage = ImageTk.PhotoImage( img )
-
-  def update( self, e ):
-    return True
+      Base.image = ImageTk.PhotoImage( img )
 
   def draw( self, e ):
     proj = projection( e.camera, self.p )
     proj.x -= 70
     proj.y -= 100
     if proj.x < SCREEN_WIDTH + 500 and proj.x > -500:
-      e.canvas.create_image( proj.x - 200, proj.y + 50, image=Base.baseImage )
-
-# Debug point
-class dbgPoint():
-  def __init__( self, x, y, z ):
-    self.p = Point( x, y, z )
-
-  def update( self, e ):
-    return True
-
-  def draw( self, e ):
-    proj = projection( e.camera, self.p )
-    e.canvas.create_rectangle( proj.x, proj.y - 5, proj.x, proj.y, outline="red" )
+      e.canvas.create_image( proj.x - 200, proj.y + 50, image=Base.image )
+      e.canvas.create_text( proj.x - 200, proj.y + 150, text=self.label, fill='black' )

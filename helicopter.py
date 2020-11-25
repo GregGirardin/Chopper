@@ -1,5 +1,5 @@
 import constants
-import math, random
+import math
 from utils import *
 from PIL import ImageTk, Image
 from missiles import *
@@ -8,7 +8,10 @@ class Helicopter():
   heloImages = {}
 
   def __init__( self, x, y, z ):
+    self.oType = OBJECT_TYPE_CHOPPER
+    self.colRect = (-2, 3, 2, 0)
     self.p = Point( x, y, z )
+    self.atBase = False
     self.rotorSpeed = ROTOR_SLOW
     self.fuel = 100.0
     self.rotorTheta = 0.0
@@ -74,7 +77,7 @@ class Helicopter():
     bombImage = bombImage.resize( ( 10, 30 ) )
     self.bombImg = ImageTk.PhotoImage( bombImage )
 
-  def processMessage( self, message ):
+  def processMessage( self, message, param=None ):
     if message == MSG_ACCEL_L:
       if self.tgtXVelocity > TGT_VEL_LEFT_FAST:
         self.tgtXVelocity -= 1
@@ -120,6 +123,9 @@ class Helicopter():
       if self.gunPosition < 4:
         self.gunPosition += 1
         self.gunAngle = self.gunAngleFromPosition[ self.gunPosition ]
+    elif message == MSG_COLLISION_DET:
+      pass
+    
 
   def loadImages( self ):
     imageNames = ( "bodyForward",
@@ -170,7 +176,10 @@ class Helicopter():
     self.p.y += self.vy
     self.p.x += self.vx
 
-    if self.p.x < MIN_WORLD_X:
+    if self.p.x < MIN_WORLD_X + 90:
+      if self.tgtXVelocity < TGT_VEL_RIGHT_SLOW:
+        e.addStatusMessage( "Head East ->" )
+
       self.tgtXVelocity = TGT_VEL_RIGHT_SLOW
     elif self.p.x > MAX_WORLD_X:
       self.tgtXVelocity = TGT_VEL_LEFT_SLOW
@@ -184,12 +193,22 @@ class Helicopter():
       self.vx = 0
       self.tgtXVelocity = TGT_VEL_STOP
       self.tgtYVelocity = TGT_VEL_STOP
-      if math.fabs( self.p.x ) < 8.0: # At the base, refill
-        self.fuel = 100.0
-        self.countLargeMissiles = 4
-        self.countSmallMissiles = 20
-        self.countBomb = 4
-        self.countBullet = 250
+
+      if not self.atBase:
+        for obj in e.bg_objects:
+          # See if we're near a base
+          if obj.oType == OBJECT_TYPE_BASE:
+            if math.fabs( self.p.x - obj.p.x ) < 20.0: # At a base, refill
+              self.fuel = 100.0
+              self.countLargeMissiles = 4
+              self.countSmallMissiles = 20
+              self.countBomb = 4
+              self.countBullet = 250
+              self.atBase = True
+              e.addStatusMessage( "Refueled", time=50 )
+              break
+    else: # Off the ground
+      self.atBase = False
 
     if self.vy > 0:
       self.rotorSpeed = ROTOR_FAST
@@ -204,7 +223,7 @@ class Helicopter():
                                math.fabs( self.vx ) + 2.5, self.gunAngle ) )
         elif self.chopperDir == DIRECTION_LEFT:
           e.addObject( Bullet( Point( self.p.x - 1, self.p.y + 1, self.p.z ),
-                               math.fabs( self.vx ) + 2.5, 3.14159 - self.gunAngle ) )
+                               math.fabs( self.vx ) + 2.5, PI - self.gunAngle ) )
       elif self.weapon == WEAPON_SMALL_MISSILE:
         e.addObject( MissileSmall( self.p, self.vx, self.vy, self.chopperDir ) )
       elif self.weapon == WEAPON_LARGE_MISSILE:
@@ -381,3 +400,6 @@ class Helicopter():
       e.canvas.create_image( 70, 50 + 6 * i, image=self.missileLImg )
     for i in range( 0, self.countBomb ):
       e.canvas.create_image( 10 + 10 * i, 35, image=self.bombImg )
+    t = "Rounds %s" % self.countBullet
+    e.canvas.create_text( 100, 30, text=t )
+

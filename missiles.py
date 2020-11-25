@@ -7,7 +7,9 @@ from PIL import ImageTk, Image
 
 class Bullet():
   def __init__( self, p, v, d ):
+    self.oType = OBJECT_TYPE_WEAPON
     self.p = Point( p.x, p.y, p.z )
+    self.colRect = ( 0, 0, 1, 1 )
     self.time = 100
     self.v = v
     self.d = d
@@ -36,10 +38,11 @@ class Bullet():
                           fill="black",
                           width=2 )
 
-
 # Base class for missiles
 class MissileBase():
   def __init__( self, p, vx, vy, d ):
+    self.oType = OBJECT_TYPE_WEAPON
+    self.colRect = ( -1, 1, 1, 0 )
     self.p = Point( p.x, p.y, p.z )
     self.vx = vx # Velocity x and y
     self.vy = vy
@@ -47,6 +50,9 @@ class MissileBase():
     self.time = 0
     self.thrust = False
     self.d = d # Direction
+
+  def processMessage( self, message, param=None ):
+    pass
 
   def update( self, e ):
     self.time += 1
@@ -79,7 +85,6 @@ class MissileBase():
     if self.p.y <= 0.0: # hit the ground ?
       e.addObject( Explosion( self.p ) )
       return False
-
 
 class MissileSmall( MissileBase ):
   missileImagesS = []
@@ -115,16 +120,11 @@ class MissileSmall( MissileBase ):
     if self.thrust:
       xOff = -30 if self.d else 30
       e.canvas.create_image( proj.x + xOff, proj.y, image=MissileSmall.exhaustImagesS[ self.d ] )
-    e.canvas.create_rectangle( proj.x - 10,
-                               projShadow.y,
-                               proj.x + 10,
-                               projShadow.y,
-                               outline="black" )
-
+    e.canvas.create_rectangle( proj.x - 10, projShadow.y, proj.x + 10, projShadow.y, outline="black" )
 
 class MissileLarge( MissileBase ):
-  missileImagesL = [ ]
-  exhaustImagesL = [ ]
+  missileImagesL = []
+  exhaustImagesL = []
 
   def __init__( self, p, vx, vy, d ):
     MissileBase.__init__( self, p, vx, vy, d )
@@ -164,14 +164,19 @@ class Bomb():
   bombImage = None
 
   def __init__( self, p, vx, vy ):
+    self.oType = OBJECT_TYPE_WEAPON
+    self.colRect = ( -.5, 1, .5, 0 )
     self.p = Point( p.x, p.y, p.z )
     self.vx = vx
     self.vy = vy
 
     if not Bomb.bombImage:
-      Bomb.bombImage = Image.open( "images/chopper/bomb.gif" )
-      Bomb.bombImage = bombImage.resize( ( 10, 30 ) )
+      bombImage = Image.open( "images/chopper/bomb.gif" )
+      bombImage = bombImage.resize( ( 10, 30 ) )
       Bomb.bombImage = ImageTk.PhotoImage( bombImage )
+
+  def processMessage( self, message, param=None ):
+    pass
 
   def update( self, e ):
     if self.vy > -1.0:
@@ -187,8 +192,7 @@ class Bomb():
 
   def draw( self, e ):
     proj = projection( e.camera, self.p )
-    projShadow = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
+    ps = projection( e.camera, Point( self.p.x, 0, self.p.z ) ) # Shadow
 
     e.canvas.create_image( proj.x, proj.y, image=Bomb.bombImage )
-    e.canvas.create_rectangle( proj.x - 5, projShadow.y,
-                               proj.x + 5, projShadow.y, outline="black" )
+    e.canvas.create_rectangle( proj.x - 5, ps.y, proj.x + 5, ps.y, outline="black" )

@@ -4,15 +4,18 @@ from Tkinter import *
 from PIL import ImageTk, Image
 
 class Explosion():
-  explosionImages = []  # List of lists
+  images = []  # List of lists
 
   def __init__( self, p ):
+    self.oType = OBJECT_TYPE_NONE
     self.p = Point( p.x, p.y, p.z )
     self.time = 0
+    self.colRect = ( 0, 0, 0, 0 )
+
     self.explosionIx = random.randint( 0, 1 ) # Just make this random for now.
     self.imgIx = 0
 
-    if not Explosion.explosionImages:
+    if not Explosion.images:
       images = []
       img = Image.open( "images/explosions/Explosion1.gif" )
       for y in range( 0, 5 ):
@@ -21,7 +24,7 @@ class Explosion():
           crop = img.crop( ( x * SW, y * SW, x * SW + SW, y * SW + SW ) )
           crop = ImageTk.PhotoImage( crop )
           images.append( crop )
-      Explosion.explosionImages.append( images )
+      Explosion.images.append( images )
 
       images = []
       img = Image.open( "images/explosions/Explosion2.gif" )
@@ -31,19 +34,22 @@ class Explosion():
           crop = img.crop( ( x * SW + 15, y * SW + 36, x * SW + 115, y * SW + 124 ) )
           crop = ImageTk.PhotoImage( crop )
           images.append( crop )
-      Explosion.explosionImages.append( images )
+      Explosion.images.append( images )
+
+  def processMessage( self, message, param=None ):
+    pass
 
   def update( self, e ):
     self.time += 1
 
     self.imgIx = self.time
-    if self.imgIx >= len( Explosion.explosionImages[ self.explosionIx ] ):
+    if self.imgIx >= len( Explosion.images[ self.explosionIx ] ):
       e.addObject( SmokeA( self.p ) )
       return False
     return True
 
   def draw( self, e ):
-    img = Explosion.explosionImages[ self.explosionIx ][ self.imgIx ]
+    img = Explosion.images[ self.explosionIx ][ self.imgIx ]
 
     proj = projection( e.camera, self.p )
     if proj.x > SCREEN_WIDTH + 100 or proj.x < -100:
@@ -52,14 +58,16 @@ class Explosion():
     e.canvas.create_image( proj.x, proj.y, image=img )
 
 class BombExplosion(): # Explosion that looks like something fell vertically.
-  bombImages = [ ]
+  images = [ ]
 
   def __init__( self, p ):
+    self.oType = OBJECT_TYPE_NONE
     self.p = Point( p.x, p.y + 10, p.z )
     self.time = 0
     self.imgIx = 0
+    self.colRect = ( 0, 0, 0, 0 )
 
-    if not BombExplosion.bombImages:
+    if not BombExplosion.images:
       img = Image.open( "images/explosions/Bomb.png" ) # TBD not quite perfect cropping
       for y in range( 0, 2 ):
         for x in range( 0, 7 ):
@@ -68,21 +76,24 @@ class BombExplosion(): # Explosion that looks like something fell vertically.
           crop = img.crop( ( x * SW, y * SH, x * SW + SW, y * SH + SH ) )
           # crop = crop.resize( ( 150, 150 ) )
           crop = ImageTk.PhotoImage( crop )
-          BombExplosion.bombImages.append( crop )
+          BombExplosion.images.append( crop )
           if y == 1 and x == 3:
             break
+
+  def processMessage( self, message, param=None ):
+    pass
 
   def update( self, e ):
     self.time += 1
     self.imgIx = self.time / 2
-    if self.imgIx >= len( BombExplosion.bombImages ):
+    if self.imgIx >= len( BombExplosion.images ):
       e.addObject( SmokeV( Point( self.p.x,self.p.y - 10, self.p.z ) ) )
       return False
 
     return True
 
   def draw( self, e ):
-    img = BombExplosion.bombImages[ self.imgIx ]
+    img = BombExplosion.images[ self.imgIx ]
 
     proj = projection( e.camera, self.p )
     if proj.x > SCREEN_WIDTH + 100 or proj.x < -100:
@@ -91,13 +102,15 @@ class BombExplosion(): # Explosion that looks like something fell vertically.
     e.canvas.create_image( proj.x, proj.y + 100, image=img )
 
 class SmokeA(): # Small puff of smoke
-  smokeAImages = [ ]
+  images = [ ]
 
   def __init__( self, p ):
+    self.oType = OBJECT_TYPE_NONE
     self.p = Point( p.x, p.y, p.z )
     self.imgIx = 0
+    self.colRect = ( 0, 0, 0, 0 )
 
-    if not SmokeA.smokeAImages:
+    if not SmokeA.images:
       img = Image.open( "images/explosions/SmokeA.gif" )
       for y in range( 0, 4 ):
         for x in range( 0, 8 ):
@@ -106,17 +119,20 @@ class SmokeA(): # Small puff of smoke
           crop = img.crop( ( x * SW, y * SH, x * SW + SW, y * SH + SH ) )
           #crop = crop.resize( ( 150, 150 ) )
           crop = ImageTk.PhotoImage( crop )
-          SmokeA.smokeAImages.append( crop )
+          SmokeA.images.append( crop )
+
+  def processMessage( self, message, param=None ):
+    pass
 
   def update( self, e ):
     self.imgIx += 1
-    if self.imgIx >= len( SmokeA.smokeAImages ):
+    if self.imgIx >= len( SmokeA.images ):
       return False
 
     return True
 
   def draw( self, e ):
-    img = SmokeA.smokeAImages[ self.imgIx ]
+    img = SmokeA.images[ self.imgIx ]
 
     proj = projection( e.camera, self.p )
     if proj.x > SCREEN_WIDTH + 100 or proj.x < -100:
@@ -125,13 +141,15 @@ class SmokeA(): # Small puff of smoke
     e.canvas.create_image( proj.x, proj.y - 20, image=img )
 
 class SmokeB(): # Larger smoke puff
-  smokeBImages = []
+  images = []
 
   def __init__( self, p ):
+    self.oType = OBJECT_TYPE_NONE
     self.p = Point( p.x, p.y, p.z )
     self.imgIx = 0
+    self.colRect = ( 0, 0, 0, 0 )
 
-    if not SmokeB.smokeBImages:
+    if not SmokeB.images:
       img = Image.open( "images/explosions/SmokeB.gif" )
       for y in range( 0, 5 ):
         for x in range( 0, 8 ):
@@ -140,17 +158,20 @@ class SmokeB(): # Larger smoke puff
           crop = img.crop( ( x * SW + 1, y * SH, x * SW + SW - 1, y * SH + SH ) )
           #crop = crop.resize( ( 150, 150 ) )
           crop = ImageTk.PhotoImage( crop )
-          SmokeB.smokeBImages.append( crop )
+          SmokeB.images.append( crop )
+
+  def processMessage( self, message, param=None ):
+    pass
 
   def update( self, e ):
     self.imgIx += 1
-    if self.imgIx >= len( SmokeB.smokeBImages ):
+    if self.imgIx >= len( SmokeB.images ):
       return False
 
     return True
 
   def draw( self, e ):
-    img = SmokeB.smokeBImages[ self.imgIx ]
+    img = SmokeB.images[ self.imgIx ]
 
     proj = projection( e.camera, self.p )
     if proj.x > SCREEN_WIDTH + 100 or proj.x < -100:
@@ -159,39 +180,44 @@ class SmokeB(): # Larger smoke puff
     e.canvas.create_image( proj.x, proj.y, image=img )
 
 class SmokeV(): # Vertical smoke
-  smokeVImages = [ ]
+  images = [ ]
 
   def __init__( self, p ):
+    self.oType = OBJECT_TYPE_NONE
     self.p = Point( p.x, p.y, p.z )
     self.imgIx = 0
     self.time = 0
+    self.colRect = ( 0, 0, 0, 0 )
 
-    if not SmokeV.smokeVImages:
+    if not SmokeV.images:
       SW = 37
       img = Image.open( "images/explosions/SmokeV.gif" )
       for x in range( 0, 10 ):
         crop = img.crop( ( x * SW, 20, 37 + x * SW, 220 ) )
         crop = crop.resize( ( 15 + x * 15, 15 + x * 15 ) )
         crop = ImageTk.PhotoImage( crop )
-        SmokeV.smokeVImages.append( crop )
+        SmokeV.images.append( crop )
 
       for x in range( 0, 10 ):
         crop = img.crop( ( x * SW, 20, 37 + x * SW, 220 ) )
         # crop = crop.resize( ( 150, 15 + x * 15 ) )
         crop = ImageTk.PhotoImage( crop )
-        SmokeV.smokeVImages.append( crop )
+        SmokeV.images.append( crop )
+
+  def processMessage( self, message, param=None ):
+    pass
 
   def update( self, e ):
     self.time += 1
 
     self.imgIx = self.time / 2
-    if self.imgIx >= len( SmokeV.smokeVImages ):
+    if self.imgIx >= len( SmokeV.images ):
       return False
 
     return True
 
   def draw( self, e ):
-    img = SmokeV.smokeVImages[ self.imgIx ]
+    img = SmokeV.images[ self.imgIx ]
 
     proj = projection( e.camera, self.p )
     if proj.x > SCREEN_WIDTH + 100 or proj.x < -100:
