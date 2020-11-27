@@ -11,7 +11,7 @@ class Helicopter():
     self.oType = OBJECT_TYPE_CHOPPER
     self.colRect = (-2, 3, 2, 0)
     self.p = Point( x, y, z )
-    self.atBase = False
+    self.onGround = False
     self.rotorSpeed = ROTOR_SLOW
     self.fuel = 100.0
     self.rotorTheta = 0.0
@@ -33,7 +33,7 @@ class Helicopter():
     self.gunAngle = 0
     self.gunPosition = 0 # currently just a number from 0-4
 
-    self.structuralIntegrity = 1000
+    self.structuralIntegrity = SI_CHOPPER
 
     # Target vx enum -> vx map
     self.tgtXVelDict = \
@@ -139,7 +139,6 @@ class Helicopter():
         Helicopter.heloImages[ name ] = ImageTk.PhotoImage( Image.open( "images/chopper/" + name + ".gif" ) )
 
   def update( self, e ):
-
     if self.structuralIntegrity < 0:
       e.addStatusMessage( "Destroyed!" )
       return False
@@ -202,21 +201,22 @@ class Helicopter():
       self.tgtXVelocity = TGT_VEL_STOP
       self.tgtYVelocity = TGT_VEL_STOP
 
-      if not self.atBase:
+      if not self.onGround: # Only check once
         for obj in e.bg_objects:
           # See if we're near a base
           if obj.oType == OBJECT_TYPE_BASE:
-            if math.fabs( self.p.x - obj.p.x ) < 10.0: # At a base, refill
+            if math.fabs( self.p.x - obj.p.x ) < 10.0:
+              obj.visited = True
               self.fuel = 100.0
               self.countLargeMissiles = 4
               self.countSmallMissiles = 20
               self.countBomb = 4
               self.countBullet = 250
-              self.atBase = True
+              self.onGround = True
               e.addStatusMessage( "Refueled", time=50 )
               break
     else: # Off the ground
-      self.atBase = False
+      self.onGround = False
 
     if self.vy > 0:
       self.rotorSpeed = ROTOR_FAST
@@ -419,7 +419,9 @@ class Helicopter():
     # Fuel level
     e.canvas.create_rectangle( 10, 10, 10 + 100.0 * 2, 15, fill="red" )
     e.canvas.create_rectangle( 10, 10, 10 + self.fuel * 2, 15, fill="green" )
-
+    # Structural integrity
+    e.canvas.create_rectangle( 10, 15, 10 + 100.0 * 2, 20, fill="red" )
+    e.canvas.create_rectangle( 10, 15, 10 + self.structuralIntegrity * 2, 20, fill="green" )
     # Number of weapons
     for i in range( 0, self.countSmallMissiles ):
       e.canvas.create_image( 10, 50 + 6 * i, image=self.missileSImg )

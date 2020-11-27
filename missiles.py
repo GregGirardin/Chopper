@@ -5,33 +5,39 @@ from explosions import *
 from Tkinter import *
 from PIL import ImageTk, Image
 
+BULLET_LIFETIME = 100
+
 class Bullet():
-  def __init__( self, p, v, d ):
-    self.oType = OBJECT_TYPE_WEAPON
-    self.wDamage = 1
+  def __init__( self, p, v, d, oType=OBJECT_TYPE_WEAPON ):
+    self.oType = oType # can be OBJECT_TYPE_WEAPON or OBJECT_TYPE_E_WEAPON if sourced from an enemy.
+    self.wDamage = WEAPON_DAMAGE_BULLET
     self.p = Point( p.x, p.y, p.z )
     self.colRect = ( 0, 0, 1, 1 )
-    self.time = 100
+    self.time = 0
     self.v = v
     self.d = d
-
-  def update( self, e ):
-    self.time -= 1
-    if self.time < 0:
-      return False
-
-    self.p.x += self.v * math.cos( self.d )
-    self.p.y += self.v * math.sin( self.d )
-
-    if self.p.y < 0.0:
-      e.addObject( SmokeA( Point( self.p.x, self.p.y, self.p.z ) ) )
-      return False
-    return True
+    self.vx = self.v * math.cos( self.d )
+    self.vy = self.v * math.sin( self.d )
 
   def processMessage( self, e, message, param=None ):
 
     if message == MSG_COLLISION_DET:
-      self.time = 0
+      e.addObject( SmokeA( Point( self.p.x, self.p.y, self.p.z ) ) )
+      self.time = BULLET_LIFETIME + 1
+
+  def update( self, e ):
+    if self.time > BULLET_LIFETIME:
+      return False
+
+    self.time += 1
+    self.p.x += self.vx
+    self.p.y += self.vy
+
+    if self.p.y < 0.0:
+      e.addObject( SmokeA( Point( self.p.x, self.p.y, self.p.z ) ) )
+      return False
+
+    return True
 
   def draw( self, e ):
     proj = projection( e.camera, self.p )
@@ -46,26 +52,28 @@ class Bullet():
 
 # Base class for missiles
 class MissileBase():
-  def __init__( self, p, vx, vy, d ):
-    self.oType = OBJECT_TYPE_WEAPON
+  def __init__( self, p, vx, vy, d, oType=OBJECT_TYPE_WEAPON ):
+    self.oType = oType
     self.colRect = ( -1, 1, 1, 0 )
     self.p = Point( p.x, p.y, p.z )
     self.vx = vx # Velocity x and y
     self.vy = vy
-    self.fuel = 60.0
+    self.fuel = 60
     self.time = 0
     self.thrust = False
     self.d = d # Direction
 
   def processMessage( self, e, message, param=None ):
-
     if message == MSG_COLLISION_DET:
-      self.time = 0
+      e.addObject( Explosion( self.p ) )
+      self.time = -1 # trick to make it disappear rather than use another flag
 
   def update( self, e ):
+    if self.time < 0:
+      return False
     self.time += 1
 
-    if self.time > 10 and self.fuel > 0.0:
+    if self.time > 3 and self.fuel > 0.0:
       self.thrust = True
       self.fuel -= 1
     else:
@@ -98,9 +106,9 @@ class MissileSmall( MissileBase ):
   missileImagesS = []
   exhaustImagesS = []
 
-  def __init__( self, p, vx, vy, d ):
-    MissileBase.__init__( self, p, vx, vy, d )
-    self.wDamage = 5
+  def __init__( self, p, vx, vy, d,oType=OBJECT_TYPE_WEAPON ):
+    MissileBase.__init__( self, p, vx, vy, d, oType )
+    self.wDamage = WEAPON_DAMAGE_MISSLE_S
     self.maxVelocity = 4.0
 
     if len( MissileSmall.missileImagesS ) == 0:
@@ -109,14 +117,11 @@ class MissileSmall( MissileBase ):
       img = Image.open( "images/chopper/missileB_R.gif" )
       MissileSmall.missileImagesS.append( ImageTk.PhotoImage( img ) )
 
-      img = Image.open( "images/chopper/exhaustL.gif" )
-      img = img.resize( ( 10, 7 ) )
-      img = ImageTk.PhotoImage( img )
-      MissileSmall.exhaustImagesS.append( img )
-      img = Image.open( "images/chopper/exhaustR.gif" )
-      img = img.resize( ( 10, 7 ) )
-      img = ImageTk.PhotoImage( img )
-      MissileSmall.exhaustImagesS.append( img )
+      for lr in ( "L.gif", "R.gif" ):
+        img = Image.open( "images/chopper/exhaust" + lr )
+        img = img.resize( ( 10, 7 ) )
+        img = ImageTk.PhotoImage( img )
+        MissileSmall.exhaustImagesS.append( img )
 
   def update( self, e ):
     return MissileBase.update( self, e )
@@ -134,9 +139,9 @@ class MissileLarge( MissileBase ):
   missileImagesL = []
   exhaustImagesL = []
 
-  def __init__( self, p, vx, vy, d ):
-    MissileBase.__init__( self, p, vx, vy, d )
-    self.wDamage = 20
+  def __init__( self, p, vx, vy, d, oType=OBJECT_TYPE_WEAPON ):
+    MissileBase.__init__( self, p, vx, vy, d, oType )
+    self.wDamage = WEAPON_DAMAGE_MISSLE_L
     self.maxVelocity = 2.5
 
     if len( MissileLarge.missileImagesL ) == 0:
@@ -145,14 +150,11 @@ class MissileLarge( MissileBase ):
       img = Image.open( "images/chopper/missileA_R.gif" )
       MissileLarge.missileImagesL.append( ImageTk.PhotoImage( img ) )
 
-      img = Image.open( "images/chopper/exhaustL.gif" )
-      img = img.resize( ( 20, 7 ) )
-      img = ImageTk.PhotoImage( img )
-      MissileLarge.exhaustImagesL.append( img )
-      img = Image.open( "images/chopper/exhaustR.gif" )
-      img = img.resize( ( 20, 7 ) )
-      img = ImageTk.PhotoImage( img )
-      MissileLarge.exhaustImagesL.append( img )
+      for lr in ( "L.gif", "R.gif" ):
+        img = Image.open( "images/chopper/exhaust" + lr )
+        img = img.resize( ( 20, 7 ) )
+        img = ImageTk.PhotoImage( img )
+        MissileLarge.exhaustImagesL.append( img )
 
   def update( self, e ):
     return MissileBase.update( self, e )
@@ -165,19 +167,19 @@ class MissileLarge( MissileBase ):
     if self.thrust:
       xOff = -40 if self.d else 40
       e.canvas.create_image( proj.x + xOff, proj.y, image=MissileLarge.exhaustImagesL[ self.d ] )
-
     e.canvas.create_rectangle( proj.x - 20, projShadow.y, proj.x + 20, projShadow.y, outline="black" )
 
 class Bomb():
   bombImage = None
 
-  def __init__( self, p, vx, vy ):
-    self.oType = OBJECT_TYPE_WEAPON
-    self.wDamage = 100
+  def __init__( self, p, vx, vy, oType=OBJECT_TYPE_WEAPON ):
+    self.oType = oType
+    self.wDamage = WEAPON_DAMAGE_BOMB
     self.colRect = ( -.5, 1, .5, 0 )
     self.p = Point( p.x, p.y, p.z )
     self.vx = vx
     self.vy = vy
+    self.time = 0
 
     if not Bomb.bombImage:
       bombImage = Image.open( "images/chopper/bomb.gif" )
@@ -188,9 +190,13 @@ class Bomb():
 
     if message == MSG_COLLISION_DET:
       e.addObject( BombExplosion( self.p ) )
-      self.time = 0
+      self.time = -1  # trick to make it disappear rather than use another flag
 
   def update( self, e ):
+    if self.time < 0:
+      return False
+    self.time += 1
+
     if self.vy > -1.0:
       self.vy -= .05
     self.vx *= .95
@@ -205,6 +211,5 @@ class Bomb():
   def draw( self, e ):
     proj = projection( e.camera, self.p )
     ps = projection( e.camera, Point( self.p.x, 0, self.p.z ) ) # Shadow
-
     e.canvas.create_image( proj.x, proj.y, image=Bomb.bombImage )
     e.canvas.create_rectangle( proj.x - 5, ps.y, proj.x + 5, ps.y, outline="black" )

@@ -17,7 +17,8 @@ class Jeep():
     self.bounceCount = 0
     self.d = d
     self.p = Point( p.x, p.y, p.z )
-    self.structuralIntegrity = 100
+    self.structuralIntegrity = SI_JEEP
+    self.vy = 0
 
     if len( Jeep.images ) == 0:
       images = []
@@ -65,6 +66,10 @@ class Jeep():
 
   def update( self, e ):
 
+    if self.structuralIntegrity < 0:
+      e.addStatusMessage( "Jeep destroyed!" )
+      return False
+
     if not self.bounceCount:
       if random.randint( 0, 20 ) == 0: # Bounce occasionally, angle up / level / angle down / level
         self.bounceCount = 4
@@ -81,9 +86,6 @@ class Jeep():
 
     self.p.x += JEEP_DELTA if self.d == DIRECTION_RIGHT else -JEEP_DELTA
 
-    if self.structuralIntegrity < 0:
-      e.addStatusMessage( "Jeep destroyed!" )
-      return False
     if self.p.x < MIN_WORLD_X:
       self.d = DIRECTION_RIGHT
       self.p.x = MIN_WORLD_X
@@ -112,7 +114,8 @@ class Transport1():
     self.bounceCount = 0
     self.d = d
     self.p = Point( p.x, p.y, p.z )
-    self.structuralIntegrity = 200
+    self.structuralIntegrity = SI_TRANSPORT1
+    self.vy = 0
 
     if len( Transport1.images ) == 0:
       img = Image.open( "images/vehicles/transport1.gif" )
@@ -124,7 +127,11 @@ class Transport1():
         Transport1.images.append( crop )
 
   def processMessage( self, e, message, param=None ):
-    pass
+    if message == MSG_COLLISION_DET:
+      if param.oType == OBJECT_TYPE_WEAPON:
+        self.structuralIntegrity -= param.wDamage
+        if self.structuralIntegrity < 0:
+          e.addObject( BombExplosion( self.p ) )
 
   # Draw wheels with circles instead of using sprites.
   def drawWheel( self, c, x, y, radius, angle ):
@@ -144,13 +151,17 @@ class Transport1():
       theta += ( 2 * PI ) / 5
 
   def update( self, e ):
-    if e.debugCoords:
-      return True
-    self.time += 1
-    if self.time > 500:
+    if self.structuralIntegrity < 0:
+      e.addStatusMessage( "Transport destroyed!" )
       return False
 
     self.p.x += TRANSPORT1_DELTA if self.d == DIRECTION_RIGHT else -TRANSPORT1_DELTA
+    if self.p.x < MIN_WORLD_X:
+      self.d = DIRECTION_RIGHT
+      self.p.x = MIN_WORLD_X
+    elif self.p.x > MAX_WORLD_X:
+      self.d = DIRECTION_LEFT
+      self.p.x = MAX_WORLD_X
 
     return True
 
@@ -174,7 +185,8 @@ class Transport2():
     self.bounceCount = 0
     self.d = d
     self.p = Point( p.x, p.y, p.z )
-    self.structuralIntegrity = 200
+    self.structuralIntegrity = SI_TRANSPORT2
+    self.vy = 0
 
     if len( Transport2.images ) == 0:
       img = Image.open( "images/vehicles/transport2.gif" )
@@ -186,7 +198,11 @@ class Transport2():
         Transport2.images.append( crop )
 
   def processMessage( self, e, message, param=None ):
-    pass
+    if message == MSG_COLLISION_DET:
+      if param.oType == OBJECT_TYPE_WEAPON:
+        self.structuralIntegrity -= param.wDamage
+        if self.structuralIntegrity < 0:
+          e.addObject( BombExplosion( self.p ) )
 
   # Draw wheels with circles instead of using sprites.
   def drawWheel( self, c, x, y, radius, angle ):
@@ -207,11 +223,18 @@ class Transport2():
       theta += ( 2 * PI ) / 5
 
   def update( self, e ):
-    self.time += 1
-    if self.time > 500:
+    if self.structuralIntegrity < 0:
+      e.addStatusMessage( "Transport destroyed!" )
       return False
 
     self.p.x += TRANSPORT2_DELTA if self.d == DIRECTION_RIGHT else -TRANSPORT2_DELTA
+    if self.p.x < MIN_WORLD_X:
+      self.d = DIRECTION_RIGHT
+      self.p.x = MIN_WORLD_X
+    elif self.p.x > MAX_WORLD_X:
+      self.d = DIRECTION_LEFT
+      self.p.x = MAX_WORLD_X
+
     return True
 
   def draw( self, e ):
@@ -233,7 +256,8 @@ class Truck():
     self.bounceCount = 0
     self.d = d
     self.p = Point( p.x, p.y, p.z )
-    self.structuralIntegrity = 100
+    self.structuralIntegrity = SI_TRUCK
+    self.vy = 0
 
     if len( Truck.images ) == 0:
       img = Image.open( "images/vehicles/Truck1.gif" )
@@ -245,7 +269,11 @@ class Truck():
         Truck.images.append( crop )
 
   def processMessage( self, e, message, param=None ):
-    pass
+    if message == MSG_COLLISION_DET:
+      if param.oType == OBJECT_TYPE_WEAPON:
+        self.structuralIntegrity -= param.wDamage
+        if self.structuralIntegrity < 0:
+          e.addObject( BombExplosion( self.p ) )
 
   # Draw wheels with circles instead of using sprites.
   def drawWheel( self, c, x, y, radius, angle ):
@@ -266,11 +294,19 @@ class Truck():
       theta += ( 2 * PI ) / 2
 
   def update( self, e ):
-    self.time += 1
-    if self.time > 500:
+    if self.structuralIntegrity < 0:
+      e.addStatusMessage( "Truck destroyed!" )
       return False
 
     self.p.x += TRUCK_DELTA if self.d == DIRECTION_RIGHT else -TRUCK_DELTA
+    if self.p.x < MIN_WORLD_X - 25:
+      e.addStatusMessage( "Jeep delivered enemies!", 25 )
+      self.d = DIRECTION_RIGHT
+      self.p.x = MIN_WORLD_X
+    elif self.p.x > MAX_WORLD_X:
+      self.d = DIRECTION_LEFT
+      self.p.x = MAX_WORLD_X
+
     return True
 
   def draw( self, e ):

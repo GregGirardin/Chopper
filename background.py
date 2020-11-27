@@ -181,6 +181,7 @@ class Base():
     self.p = Point( x, y, z )
     self.label = label
     self.oType = OBJECT_TYPE_BASE
+    self.visited = False # Have we landed here? May use to indicate game progress.
 
     if not Base.image:
       img = Image.open( "images/backgrounds/base.gif" )
@@ -193,4 +194,25 @@ class Base():
     proj.y -= 50
     if proj.x < SCREEN_WIDTH + 500 and proj.x > -500:
       e.canvas.create_image( proj.x, proj.y, image=Base.image )
+      e.canvas.create_text( proj.x, proj.y + 100, text=self.label, fill='black' )
+
+class EnemyBase():
+  image = None
+
+  def __init__( self, x, y, z, label=None ):
+    self.p = Point( x, y, z )
+    self.label = label
+    self.oType = OBJECT_TYPE_EBASE
+
+    if not EnemyBase.image:
+      img = Image.open( "images/backgrounds/base.gif" )
+      img = img.resize( ( 800, 600 ) )
+      EnemyBase.image = ImageTk.PhotoImage( img )
+
+  def draw( self, e ):
+    proj = projection( e.camera, self.p )
+    proj.x -= 30
+    proj.y -= 50
+    if proj.x < SCREEN_WIDTH + 500 and proj.x > -500:
+      e.canvas.create_image( proj.x, proj.y - 150, image=EnemyBase.image )
       e.canvas.create_text( proj.x, proj.y + 100, text=self.label, fill='black' )

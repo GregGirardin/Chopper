@@ -3,6 +3,7 @@ import math, random
 from utils import *
 from Tkinter import *
 from PIL import ImageTk, Image
+from explosions import *
 
 class Tank():
   tankImages = []
@@ -14,8 +15,9 @@ class Tank():
     self.d = d
     self.p = Point( p.x, p.y, p.z )
     self.cannonAngle = 3 # 0 - 3
-    self.colRect = (-4, 4, 4, 0)
-    self.structuralIntegrity = 500
+    self.colRect = ( -4, 4, 4, 0 )
+    self.structuralIntegrity = SI_TANK
+    self.vy = 0
 
     if len( Tank.tankImages ) == 0:
       img = Image.open( "images/vehicles/Tank.gif" ) # 256x128 rectangular sprites
@@ -55,20 +57,25 @@ class Tank():
       self.tpDis.append( lenList )
 
   def processMessage( self, e, message, param=None ):
-    pass
+    if message == MSG_COLLISION_DET:
+      if param.oType == OBJECT_TYPE_WEAPON:
+        self.structuralIntegrity -= param.wDamage
+        if self.structuralIntegrity < 0:
+          e.addObject( BombExplosion( Point( self.p.x - 1, self.p.y, self.p.z ) ) )
+          e.addObject( BombExplosion( Point( self.p.x + 1, self.p.y, self.p.z ) ) )
 
   def update( self, e ):
-    if e.debugCoords:
-      return True
-
-    self.time += 1
-    if self.time > 1000:
+    if self.structuralIntegrity < 0:
+      e.addStatusMessage( "Tank destroyed!" )
       return False
 
-    if self.d == DIRECTION_LEFT:
-      self.p.x -= TANK_DELTA
-    else:
-      self.p.x += TANK_DELTA
+    self.p.x += TANK_DELTA if self.d == DIRECTION_RIGHT else -TANK_DELTA
+    if self.p.x < MIN_WORLD_X:
+      self.d = DIRECTION_RIGHT
+      self.p.x = MIN_WORLD_X
+    elif self.p.x > MAX_WORLD_X:
+      self.d = DIRECTION_LEFT
+      self.p.x = MAX_WORLD_X
 
     return True
 
@@ -112,5 +119,3 @@ class Tank():
       if treadDistance > self.tpDis[ self.d ][ segment ]:
         treadDistance -= self.tpDis[ self.d ][ segment ]  # now treadDistance is the first point along the next segment
         segment += 1
-
-    # e.canvas.create_rectangle( p.x, p.y - 2, p.x, p.y, outline="red" )

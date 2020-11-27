@@ -12,6 +12,7 @@ from jeep import *
 from tank import *
 from planes import *
 from enemyAI import *
+import random
 
 chopper = None
 
@@ -22,9 +23,14 @@ class displayEngine():
     self.canvas = Canvas( self.root, width=SCREEN_WIDTH, height=SCREEN_HEIGHT )
     self.canvas.pack()
 
-    self.camera = Point( 0, 20, CAM_Z )
-    self.currentCamOff = 0 # -50
-    self.debugCoords =     True # debug, flash objects x,y
+    self.camera = Point( 0, 15, CAM_Z )
+    self.currentCamOff = -50 # Start from the left initially to show the City
+    self.debugCoords = False # True # debug, flash objects x,y
+
+    self.chopper = None
+
+  def cityBombed( self, si ):
+    pass
 
   def newGame( self ):
     global chopper
@@ -32,6 +38,8 @@ class displayEngine():
     self.statusMessages = []
     self.statusMsgTime = None
     self.statusMsgCurrent = None
+
+    self.citySI = 100.0 # City structural integrity
 
     self.time = 0
     self.bg_objects = [] # Background objects that don't interact with anything.. no collisions or update
@@ -49,8 +57,8 @@ class displayEngine():
                                           random.randint( MAX_MTN_HEIGHT / 4, MAX_MTN_HEIGHT ),
                                           z ) )
     # Borders of playing field.
-    #self.bg_objects.append( Mountain( MIN_WORLD_X - 50, 100, 100, -20 ) )
-    #self.bg_objects.append( Mountain( MAX_WORLD_X,      100, 100, -20 ) )
+    # self.bg_objects.append( Mountain( MIN_WORLD_X - 50, 100, 100, -20 ) )
+    # self.bg_objects.append( Mountain( MAX_WORLD_X,      100, 100, -20 ) )
     self.bg_objects.append( City( MIN_WORLD_X - 20, 0, 0 ) )
 
     # Clouds
@@ -81,11 +89,14 @@ class displayEngine():
     # Create the Chopper
     chopper = Helicopter( 0, 0, 1 )
     self.objects.append( chopper )
+    self.chopper = chopper
 
     # Bases
-    self.bg_objects.append( Base(    0, 0, 2, label="Base I" ) )
-    self.bg_objects.append( Base( 1000, 0, 2, label="Base II" ) )
-    self.bg_objects.append( Base( 2000, 0, 2, label="Base III" ) )
+    self.bg_objects.append( Base(             0,     0, 2, label="Base I"   ) )
+    self.bg_objects.append( Base( BASE_DISTANCE,     0, 2, label="Base II"  ) )
+    self.bg_objects.append( Base( BASE_DISTANCE * 2, 0, 2, label="Base III" ) )
+    self.bg_objects.append( Base( BASE_DISTANCE * 3, 0, 2, label="Base IV"  ) )
+    # self.bg_objects.append( EnemyBase( 100, 0, 2, label="Enemy Base" ) )
 
     self.objects.append( GameManager() )
 
@@ -118,7 +129,7 @@ class displayEngine():
     self.objects.sort( key=increaseZ )
 
   # Q's a status message to be displayed at the center of the screen. time is display cycles.
-  def addStatusMessage( self, m, time=200 ):
+  def addStatusMessage( self, m, time=100 ):
     self.statusMessages.insert( 0, ( m, time ) ) # list contains (string,time) tuples. Newest to head, pull from end
 
   def gameOver( self ):
@@ -128,6 +139,7 @@ class displayEngine():
     self.time += 1
 
     if self.time == 50:
+      self.addStatusMessage( "Defend your City" )
       self.addStatusMessage( "Head to Base II. ->" )
 
     # Update objects
@@ -145,16 +157,9 @@ class displayEngine():
           obj1.processMessage( self, MSG_COLLISION_DET, obj2 )
           obj2.processMessage( self, MSG_COLLISION_DET, obj1 )
 
-    # Spawn objects
-
     # Move the camera. Determine where we want it relative to the chopper
     # If chopper is facing left, we want the camera on the right side of the screen.
-    if chopper.chopperDir == DIRECTION_LEFT:
-      tgtCamOff = -30
-    elif chopper.chopperDir == DIRECTION_RIGHT:
-      tgtCamOff = 30
-    else:
-      tgtCamOff = 0
+    tgtCamOff = [ -30, 30, 0 ][ chopper.chopperDir ]
 
     if self.currentCamOff < tgtCamOff:
       self.currentCamOff += .5
@@ -167,27 +172,27 @@ class displayEngine():
     elif self.camera.x > MAX_WORLD_X:
       self.camera.x = MAX_WORLD_X
 
-    if chopper.p.y > 40:
-      self.camera.y = chopper.p.y - 20
-    else:
-      self.camera.y = 20
+    self.camera.y = ( chopper.p.y - 20 ) if chopper.p.y > 40 else 20
 
   def draw( self ):
     self.canvas.delete( ALL )
     for o in self.bg_objects:
       o.draw( self )
+      if self.debugCoords:
+        proj = projection( self.camera, o.p )
+        e.canvas.create_rectangle( proj.x - 1, proj.y - 1, proj.x + 1, proj.y + 1, outline="red" )
     for o in self.objects:
-      if self.debugCoords and self.time % 40 < 20:
+      o.draw( self )
+      if self.debugCoords:
         proj = projection( self.camera, o.p )
         e.canvas.create_rectangle( proj.x - 1, proj.y - 1, proj.x + 1, proj.y + 1, outline="red" )
         displayColRect( e, o )
-      else:
-        o.draw( self )
 
     if self.statusMsgTime > 0:
       self.statusMsgTime -= 1
-      e.canvas.create_text( SCREEN_WIDTH / 2, SCREEN_HEIGHT / 3, text=self.statusMsgCurrent, fill='red',
-                            font=tkFont.Font( family='Helvetica', size=28, weight='bold'))
+      e.canvas.create_text( SCREEN_WIDTH / 2, SCREEN_HEIGHT / 3,
+                            text=self.statusMsgCurrent, fill='red',
+                            font=tkFont.Font( family='Helvetica', size=28, weight='bold' ) )
     elif self.statusMessages:
       m = self.statusMessages.pop()
       self.statusMsgCurrent = m [ 0 ]

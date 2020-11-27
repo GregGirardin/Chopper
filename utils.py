@@ -122,7 +122,6 @@ def vectorDiff( f, t ):
   d = dir( dx, dy )
   return Vector( m, d )
 
-
 '''
 Given a Camera at c and a point at p, compute the screen coordinates
 
@@ -149,17 +148,17 @@ def projection( c, p ):
   xNorm = pProjX / projEdgeX # Normalized coords. +1 to -1 mean screen edges
   yNorm = pProjY / projEdgeY
 
-  # (0, 0) is the pixel at (SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2). +y is up, so flip y
-  xRaster = ( SCREEN_WIDTH / 2 ) + ( SCREEN_WIDTH / 2 ) * xNorm
+  # ( 0, 0 ) is the pixel at ( SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 ). +y is up, so flip y
+  xRaster = ( SCREEN_WIDTH  / 2 ) + ( SCREEN_WIDTH  / 2 ) * xNorm
   yRaster = ( SCREEN_HEIGHT / 2 ) - ( SCREEN_HEIGHT / 2 ) * yNorm
 
   return Point( xRaster, yRaster, 0 )
 
 # See if these two objects have collided. Objects must have a Point p indicating
-# their world position and a colRect tuple indicating the (x left, y top, x right, y bottom)
-# collision rectang;e in relative world coords to p
-# We assume constant Z and ignore.
+# their world position and a colRect tuple indicating the ( x left, y top, x right, y bottom )
+# collision rectangle in relative world coords to p. We assume constant Z and ignore.
 def collisionCheck( e, obj1, obj2 ):
+
   l1x = obj1.p.x + obj1.colRect[ 0 ]
   l1y = obj1.p.y + obj1.colRect[ 1 ]
   r1x = obj1.p.x + obj1.colRect[ 2 ]
@@ -171,6 +170,34 @@ def collisionCheck( e, obj1, obj2 ):
   r2y = obj2.p.y + obj2.colRect[ 3 ]
 
   if l1x >= r2x or l2x >= r1x or l1y <= r2y or l2y <= r1y:
+    return False
+  # Rectangles overlap.
+
+  # Currently collisions that matter are
+  # 1) The chopper and an enemy weapon
+  # 2) A weapon from the chopper and an enemy
+  #
+  # We don't care if two enemy vehicles collide, two friendly weapons collide, etc.
+
+  weapon = 0
+  eWeapon = 0
+  if obj1.oType == OBJECT_TYPE_WEAPON:
+    weapon += 1
+  if obj2.oType == OBJECT_TYPE_WEAPON:
+    weapon += 1
+  if weapon == 2:
+    return False
+
+  if obj1.oType == OBJECT_TYPE_E_WEAPON:
+    eWeapon += 1
+  if obj2.oType == OBJECT_TYPE_E_WEAPON:
+    eWeapon += 1
+
+  if eWeapon == 2:
+    return False
+
+  chopper = True if ( obj1.oType == OBJECT_TYPE_CHOPPER or obj2.oType == OBJECT_TYPE_CHOPPER ) else False
+  if chopper and weapon:
     return False
 
   return True

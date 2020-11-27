@@ -11,7 +11,7 @@ class Explosion():
     self.p = Point( p.x, p.y, p.z )
     self.time = 0
     self.colRect = ( 0, 0, 0, 0 )
-
+    self.vy = 0
     self.explosionIx = random.randint( 0, 1 ) # Just make this random for now.
     self.imgIx = 0
 
@@ -66,6 +66,7 @@ class BombExplosion(): # Explosion that looks like something fell vertically.
     self.time = 0
     self.imgIx = 0
     self.colRect = ( 0, 0, 0, 0 )
+    self.vy = 0
 
     if not BombExplosion.images:
       img = Image.open( "images/explosions/Bomb.png" ) # TBD not quite perfect cropping
@@ -109,6 +110,7 @@ class SmokeA(): # Small puff of smoke
     self.p = Point( p.x, p.y, p.z )
     self.imgIx = 0
     self.colRect = ( 0, 0, 0, 0 )
+    self.vy = 0
 
     if not SmokeA.images:
       img = Image.open( "images/explosions/SmokeA.gif" )
@@ -148,6 +150,7 @@ class SmokeB(): # Larger smoke puff
     self.p = Point( p.x, p.y, p.z )
     self.imgIx = 0
     self.colRect = ( 0, 0, 0, 0 )
+    self.vy = 0
 
     if not SmokeB.images:
       img = Image.open( "images/explosions/SmokeB.gif" )
@@ -188,6 +191,7 @@ class SmokeV(): # Vertical smoke
     self.imgIx = 0
     self.time = 0
     self.colRect = ( 0, 0, 0, 0 )
+    self.vy = 0
 
     if not SmokeV.images:
       SW = 37
