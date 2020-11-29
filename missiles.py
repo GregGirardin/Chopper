@@ -8,19 +8,15 @@ from PIL import ImageTk, Image
 BULLET_LIFETIME = 100
 
 class Bullet():
-  def __init__( self, p, v, d, oType=OBJECT_TYPE_WEAPON ):
-    self.oType = oType # can be OBJECT_TYPE_WEAPON or OBJECT_TYPE_E_WEAPON if sourced from an enemy.
+  def __init__( self, p, v, oType=OBJECT_TYPE_WEAPON ):
+    self.oType = oType # OBJECT_TYPE_WEAPON or OBJECT_TYPE_E_WEAPON if sourced from an enemy.
     self.wDamage = WEAPON_DAMAGE_BULLET
     self.p = Point( p.x, p.y, p.z )
     self.colRect = ( 0, 0, 1, 1 )
     self.time = 0
     self.v = v
-    self.d = d
-    self.vx = self.v * math.cos( self.d )
-    self.vy = self.v * math.sin( self.d )
 
   def processMessage( self, e, message, param=None ):
-
     if message == MSG_COLLISION_DET:
       e.addObject( SmokeA( Point( self.p.x, self.p.y, self.p.z ) ) )
       self.time = BULLET_LIFETIME + 1
@@ -30,8 +26,7 @@ class Bullet():
       return False
 
     self.time += 1
-    self.p.x += self.vx
-    self.p.y += self.vy
+    self.p.move( self.v )
 
     if self.p.y < 0.0:
       e.addObject( SmokeA( Point( self.p.x, self.p.y, self.p.z ) ) )
@@ -44,24 +39,19 @@ class Bullet():
     if proj.x > SCREEN_WIDTH + 100 or proj.x < -100:
       return
 
-    e.canvas.create_line( proj.x, proj.y,
-                          proj.x + 4.0 * math.cos( self.d ),
-                          proj.y + 4.0 * math.sin( self.d ),
-                          fill="black",
-                          width=2 )
+    e.canvas.create_line( proj.x, proj.y, proj.x + self.v.dx(), proj.y + self.v.dy(), fill="black", width=2 )
 
 # Base class for missiles
 class MissileBase():
-  def __init__( self, p, vx, vy, d, oType=OBJECT_TYPE_WEAPON ):
+  def __init__( self, p, v, d, oType=OBJECT_TYPE_WEAPON ):
     self.oType = oType
-    self.colRect = ( -1, 1, 1, 0 )
     self.p = Point( p.x, p.y, p.z )
-    self.vx = vx # Velocity x and y
-    self.vy = vy
+    self.colRect = ( -1, 1, 1, 0 )
+    self.v = v # Initial velocity Vector
+    self.d = d # desired direction. Initial velocity may not be in that direction.
     self.fuel = 60
     self.time = 0
     self.thrust = False
-    self.d = d # Direction
 
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
@@ -79,24 +69,20 @@ class MissileBase():
     else:
       self.thrust = False
 
-    if self.thrust == True:
-      if self.vy < 0.0:
-        self.vy += .1
-        if self.vy > -.1:
-          self.vy = 0
-      if self.d == DIRECTION_LEFT:
-        if self.vx > -self.maxVelocity:
-          self.vx -= .1
-      else:
-        if self.vx < self.maxVelocity:
-          self.vx += .1
-    else: # Thrust off, fall.
-      if self.vy > -1.0:
-        self.vy -= .05
-      self.vx *= .95
+    if self.thrust == False: # Thrust off, fall.
+      self.v.add( Vector( PI / 2, .05 ) ) # gravity
+    else:
+      vx = self.v.dx() # work with components for this
+      vy = self.v.dy()
 
-    self.p.x += self.vx
-    self.p.y += self.vy
+      vy *= .95
+      if self.d == DIRECTION_LEFT and vx > -2:
+        vx -= .1
+      elif self.d == DIRECTION_RIGHT and vx < 2:
+        vx += .1
+      self.v = vecFromComps( vx, vy )
+
+    self.p.move( self.v )
 
     if self.p.y <= 0.0: # hit the ground ?
       e.addObject( Explosion( self.p ) )
@@ -106,10 +92,10 @@ class MissileSmall( MissileBase ):
   missileImagesS = []
   exhaustImagesS = []
 
-  def __init__( self, p, vx, vy, d,oType=OBJECT_TYPE_WEAPON ):
-    MissileBase.__init__( self, p, vx, vy, d, oType )
+  def __init__( self, p, v, d, oType=OBJECT_TYPE_WEAPON ):
+    MissileBase.__init__( self, p, v, d, oType )
+    self.v.maxLen = 4.0
     self.wDamage = WEAPON_DAMAGE_MISSLE_S
-    self.maxVelocity = 4.0
 
     if len( MissileSmall.missileImagesS ) == 0:
       img = Image.open( "images/chopper/missileB_L.gif" )
@@ -129,20 +115,22 @@ class MissileSmall( MissileBase ):
   def draw( self, e ):
     proj = projection( e.camera, self.p )
     projShadow = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
-    e.canvas.create_image( proj.x, proj.y, image=MissileSmall.missileImagesS[ self.d ] )
+    d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
+
+    e.canvas.create_image( proj.x, proj.y, image=MissileSmall.missileImagesS[ d ] )
     if self.thrust:
-      xOff = -30 if self.d else 30
-      e.canvas.create_image( proj.x + xOff, proj.y, image=MissileSmall.exhaustImagesS[ self.d ] )
+      xOff = -30 if d else 30
+      e.canvas.create_image( proj.x + xOff, proj.y, image=MissileSmall.exhaustImagesS[ d ] )
     e.canvas.create_rectangle( proj.x - 10, projShadow.y, proj.x + 10, projShadow.y, outline="black" )
 
 class MissileLarge( MissileBase ):
   missileImagesL = []
   exhaustImagesL = []
 
-  def __init__( self, p, vx, vy, d, oType=OBJECT_TYPE_WEAPON ):
-    MissileBase.__init__( self, p, vx, vy, d, oType )
+  def __init__( self, p, v, d, oType=OBJECT_TYPE_WEAPON ):
+    MissileBase.__init__( self, p, v, d, oType )
     self.wDamage = WEAPON_DAMAGE_MISSLE_L
-    self.maxVelocity = 2.5
+    self.v.maxLen = 2.5
 
     if len( MissileLarge.missileImagesL ) == 0:
       img = Image.open( "images/chopper/missileA_L.gif" )
@@ -172,37 +160,24 @@ class MissileLarge( MissileBase ):
 class Bomb():
   bombImage = None
 
-  def __init__( self, p, vx, vy, oType=OBJECT_TYPE_WEAPON ):
+  def __init__( self, p, v=None, oType=OBJECT_TYPE_WEAPON ):
     self.oType = oType
+    self.p = Point( p.x, p.y, p.z )
     self.wDamage = WEAPON_DAMAGE_BOMB
     self.colRect = ( -.5, 1, .5, 0 )
-    self.p = Point( p.x, p.y, p.z )
-    self.vx = vx
-    self.vy = vy
-    self.time = 0
-
+    self.v = v
     if not Bomb.bombImage:
       bombImage = Image.open( "images/chopper/bomb.gif" )
       bombImage = bombImage.resize( ( 10, 30 ) )
       Bomb.bombImage = ImageTk.PhotoImage( bombImage )
 
   def processMessage( self, e, message, param=None ):
-
     if message == MSG_COLLISION_DET:
       e.addObject( BombExplosion( self.p ) )
-      self.time = -1  # trick to make it disappear rather than use another flag
 
   def update( self, e ):
-    if self.time < 0:
-      return False
-    self.time += 1
-
-    if self.vy > -1.0:
-      self.vy -= .05
-    self.vx *= .95
-
-    self.p.y += self.vy
-    self.p.x += self.vx
+    self.v.add( Vector( PI / 2, .05 ) ) # gravity
+    self.p.move( self.v )
 
     if self.p.y <= 0.0:
       e.addObject( BombExplosion( self.p ) )

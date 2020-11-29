@@ -52,50 +52,54 @@ class Point():
 
     return direction
 
-  def move( self, v ): # v is a Vector PI/2 is up (-y)
-    self.x += v.magnitude * math.cos( v.direction )
-    self.y -= v.magnitude * math.sin( v.direction )
-    return self
-
-  def translate( self, p, theta ): # p is location, theta is orientation.
-    xr =  self.x * math.cos( theta ) - self.y * math.sin( theta ) + p.x
-    yr = -self.y * math.cos( theta ) - self.x * math.sin( theta ) + p.y
-    return Point( xr, yr, self.z )
+  def move( self, v ):
+    self.x += v.dx()
+    self.y += v.dy()
 
 class Vector():
-  def __init__( self, m, d ):
-    self.magnitude = m
+  def __init__( self, d, m, maxLen=None ):
     self.direction = d # 0 is right, PI/2 is up, PI is left, -PI/2 is down
+    self.magnitude = m
+    self.maxLen = maxLen
 
-  # add vector v
-  def add( self, v, mod=True, factor=1.0 ):
-    cx = self.dx() + v.magnitude * math.cos( v.direction ) * factor
-    cy = self.dy() - v.magnitude * math.sin( v.direction ) * factor
+  # Add vector v
+  def add( self, v ):
+    cx = self.dx() + v.magnitude * math.cos( v.direction )
+    cy = self.dy() - v.magnitude * math.sin( v.direction )
     magnitude = math.sqrt( cx ** 2 + cy ** 2 )
-    direction = dir( cx, cy )
-    if mod:
-      self.magnitude = magnitude
-      self.direction = direction
-    return Vector( magnitude, direction )
+    direction = vec_dir( cx, cy )
+    if self.maxLen:
+      if self.magnitude > self.maxLen:
+        self.magnitude = self.maxLen
+    self.magnitude = magnitude
+    self.direction = direction
 
-  def dx( self ): # x component of vector
+  def direction( self ):
+    return self.direction
+
+  def dx( self ):
     return self.magnitude * math.cos( self.direction )
 
-  def dy( self ): # y component of vector
+  def dy( self ):
     return -self.magnitude * math.sin( self.direction )
 
   def flipx( self ):
-    self.direction = dir( -self.dx(), self.dy() )
+    self.direction = vec_dir( -self.dx(), self.dy() )
 
   def flipy( self ):
-    self.direction = dir( self.dx(), -self.dy() )
+    self.direction = vec_dir( self.dx(), -self.dy() )
 
   def dot( self, angle ):
     theta = math.fabs( self.direction - angle )
     return self.magnitude * math.cos( theta )
 
+def vecFromComps( dx, dy ):
+  direction = vec_dir( dx, dy )
+  magnitude = math.sqrt( dx ** 2 + dy ** 2 )
+  return Vector( direction, magnitude )
+
 # Compute angle of a vector (dx, dy)
-def dir( dx, dy ):
+def vec_dir( dx, dy ):
   magnitude = math.sqrt( dx ** 2 + dy ** 2 )
 
   if magnitude < EFFECTIVE_ZERO:
@@ -119,7 +123,7 @@ def vectorDiff( f, t ):
   dy = t.dy() - f.dy()
 
   m = math.sqrt( dx ** 2 + dy ** 2 )
-  d = dir( dx, dy )
+  d = vec_dir( dx, dy )
   return Vector( m, d )
 
 '''
@@ -185,19 +189,24 @@ def collisionCheck( e, obj1, obj2 ):
     weapon += 1
   if obj2.oType == OBJECT_TYPE_WEAPON:
     weapon += 1
-  if weapon == 2:
-    return False
 
   if obj1.oType == OBJECT_TYPE_E_WEAPON:
     eWeapon += 1
   if obj2.oType == OBJECT_TYPE_E_WEAPON:
     eWeapon += 1
 
-  if eWeapon == 2:
+  if weapon == 2 or eWeapon == 2 or ( weapon == 0 and eWeapon == 0):
     return False
 
-  chopper = True if ( obj1.oType == OBJECT_TYPE_CHOPPER or obj2.oType == OBJECT_TYPE_CHOPPER ) else False
+  chopper = True if( obj1.oType == OBJECT_TYPE_CHOPPER or obj2.oType == OBJECT_TYPE_CHOPPER ) else False
   if chopper and weapon:
+    return False
+  if not chopper and eWeapon:
+    return False
+
+  isBuilding = True if( obj1.oType == OBJECT_TYPE_BUILDING or obj2.oType == OBJECT_TYPE_BUILDING ) else False
+
+  if weapon and isBuilding:
     return False
 
   return True

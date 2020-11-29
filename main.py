@@ -25,12 +25,16 @@ class displayEngine():
 
     self.camera = Point( 0, 15, CAM_Z )
     self.currentCamOff = -50 # Start from the left initially to show the City
-    self.debugCoords = False # True # debug, flash objects x,y
+    self.debugCoords = True # True # debug. Show x,y and collision box
 
-    self.chopper = None
+    self.chopper = None # keep a reference since a
+    self.citySI = 100.0
+    self.level = 1
 
   def cityBombed( self, si ):
-    pass
+    self.cityCasualties += si
+    self.displayCityTime = 30
+    self.addStatusMessage( "City has been bombed.", 25 )
 
   def newGame( self ):
     global chopper
@@ -39,7 +43,8 @@ class displayEngine():
     self.statusMsgTime = None
     self.statusMsgCurrent = None
 
-    self.citySI = 100.0 # City structural integrity
+    self.cityCasualties = 0
+    self.level = 1
 
     self.time = 0
     self.bg_objects = [] # Background objects that don't interact with anything.. no collisions or update
@@ -52,14 +57,11 @@ class displayEngine():
     # Mountains
     for z in( MAX_MTN_DISTANCE, MAX_MTN_DISTANCE * .75, MAX_MTN_DISTANCE * .5 ):
       for _ in range( 1, MTN_PER_LAYER ):
-        self.bg_objects.append( Mountain( random.randint( MIN_WORLD_X, MAX_WORLD_X - MAX_MTN_WIDTH ),
+        self.bg_objects.append( Mountain( random.randint( MIN_WORLD_X - 1000,
+                                                          MAX_WORLD_X + 1000 ),
                                           random.randint( MAX_MTN_WIDTH / 4, MAX_MTN_WIDTH ),
                                           random.randint( MAX_MTN_HEIGHT / 4, MAX_MTN_HEIGHT ),
                                           z ) )
-    # Borders of playing field.
-    # self.bg_objects.append( Mountain( MIN_WORLD_X - 50, 100, 100, -20 ) )
-    # self.bg_objects.append( Mountain( MAX_WORLD_X,      100, 100, -20 ) )
-    self.bg_objects.append( City( MIN_WORLD_X - 20, 0, 0 ) )
 
     # Clouds
     for z in range( 1, 10 ):
@@ -84,36 +86,36 @@ class displayEngine():
       if math.fabs( x ) > 20:
         self.bg_objects.append( Tree( x, 0, z ) )
 
-    # Active objects.
+    # Base
+    self.bg_objects.append( Base( 0, 0, 2, label="Base" ) )
+
+    # Active objects. (we call update() and check for collisions)
 
     # Create the Chopper
     chopper = Helicopter( 0, 0, 1 )
     self.objects.append( chopper )
     self.chopper = chopper
 
-    # Bases
-    self.bg_objects.append( Base(             0,     0, 2, label="Base I"   ) )
-    self.bg_objects.append( Base( BASE_DISTANCE,     0, 2, label="Base II"  ) )
-    self.bg_objects.append( Base( BASE_DISTANCE * 2, 0, 2, label="Base III" ) )
-    self.bg_objects.append( Base( BASE_DISTANCE * 3, 0, 2, label="Base IV"  ) )
-    # self.bg_objects.append( EnemyBase( 100, 0, 2, label="Enemy Base" ) )
+    buildCity( self, MIN_WORLD_X - 50, 8 )
+    buildBase( self, MAX_WORLD_X / 3, 2 ) # construct enemy base
 
     self.objects.append( GameManager() )
 
     # Debug stuff
     '''
+    self.bg_objects.append( City( MIN_WORLD_X - 20, 0, 0 ) )
     self.objects.append( Bomber( Point ( -20, 20, 0 ), DIRECTION_LEFT ) ) # DIRECTION_RIGHT DIRECTION_LEFT
     self.objects.append( Transporter( Point ( 0, 20, 0 ), DIRECTION_RIGHT ) )
-    self.objects.append( Fighter( Point ( 20, 20, 0 ), DIRECTION_RIGHT ) )
     self.objects.append( Tank( Point(  10, 0, 0 ), DIRECTION_RIGHT ) )
     self.objects.append( Jeep( Point(  -30, 0, 0 ), DIRECTION_LEFT ) )
     self.objects.append( Jeep( Point(  -20, 0, 0 ), DIRECTION_RIGHT ) )
-
     self.objects.append( Transport1( Point(  -10, 0, 0 ), DIRECTION_RIGHT ) )
     self.objects.append( Transport2( Point(  10, 0, 0 ), DIRECTION_RIGHT ) )
     self.objects.append( Truck( Point(  30, 0, 0 ), DIRECTION_RIGHT ) )
-    '''
     self.objects.append( dbgPoint( Point(  0, 0, 0 ) ) )
+
+    '''
+    self.objects.append( Fighter( Point ( 200, 20, 0 ), DIRECTION_LEFT ) )
 
     # Sort objects by decreasing Z so closer are drawn on top
     def increaseZ( o ):
@@ -129,7 +131,7 @@ class displayEngine():
     self.objects.sort( key=increaseZ )
 
   # Q's a status message to be displayed at the center of the screen. time is display cycles.
-  def addStatusMessage( self, m, time=100 ):
+  def addStatusMessage( self, m, time=50 ):
     self.statusMessages.insert( 0, ( m, time ) ) # list contains (string,time) tuples. Newest to head, pull from end
 
   def gameOver( self ):
@@ -139,13 +141,9 @@ class displayEngine():
     self.time += 1
 
     if self.time == 50:
-      self.addStatusMessage( "Defend your City" )
-      self.addStatusMessage( "Head to Base II. ->" )
-
-    # Update objects
-    for o in self.objects:
-      if o.update( self ) == False:
-        self.objects.remove( o )
+      self.addStatusMessage( "Stage 1" )
+      self.addStatusMessage( "Defend the city" )
+      self.addStatusMessage( "Destroy enemy base ->" )
 
     # Collision detection
     numObjects = len( self.objects )
@@ -156,6 +154,11 @@ class displayEngine():
         if collisionCheck( self, obj1, obj2 ):
           obj1.processMessage( self, MSG_COLLISION_DET, obj2 )
           obj2.processMessage( self, MSG_COLLISION_DET, obj1 )
+
+    # Update objects
+    for o in self.objects:
+      if o.update( self ) == False:
+        self.objects.remove( o )
 
     # Move the camera. Determine where we want it relative to the chopper
     # If chopper is facing left, we want the camera on the right side of the screen.

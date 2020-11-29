@@ -3,6 +3,7 @@ import random
 from utils import *
 from Tkinter import *
 from PIL import ImageTk, Image
+from explosions import *
 
 class SkyGround():
   def  __init__( self ):
@@ -36,7 +37,7 @@ class Mountain():
     self.z = z
     self.color = "gray"
     self.p = Point( x, 0, z )
-    self.oType = OBJECT_TYPE_NONE
+    self.oType = OBJECT_TYPE_EBASE
 
   def draw( self, e ):
     # world coordinates
@@ -125,7 +126,6 @@ class Grass():
     if not Grass.image:
       img = Image.open( "images/backgrounds/grass1.gif" )
       img = img.resize( ( 200, 30 ) )
-
       Grass.image = ImageTk.PhotoImage( img )
 
   def draw( self, e ):
@@ -196,23 +196,163 @@ class Base():
       e.canvas.create_image( proj.x, proj.y, image=Base.image )
       e.canvas.create_text( proj.x, proj.y + 100, text=self.label, fill='black' )
 
-class EnemyBase():
-  image = None
+class CityBuildings():
+  imgInfo =\
+  [
+    # Row 1
+    [ None,  32,  13,  55, 265 ],  # PhotoImage, x,y,w,h
+    [ None, 116,   7, 135, 296 ],
+    [ None, 259,  10,  77, 126 ],
+    [ None, 343,   2,  45, 196 ],
+    [ None, 399,  15,  52, 504 ],
+    [ None, 462,   6, 107, 279 ],
+    [ None, 585,  11,  54, 249 ],
+    [ None, 640,  11, 120, 193 ],
+    [ None, 882,   6,  51, 328 ],
+    # Row 2
+    [ None,  20, 291,  77, 396 ],
+    [ None, 137, 334,  96, 393 ],
+    [ None, 284, 268, 100, 427 ],
+    [ None, 556, 289, 86,  397 ],
+  ]
 
-  def __init__( self, x, y, z, label=None ):
-    self.p = Point( x, y, z )
+  numBuildings = len( imgInfo )
+
+  def __init__( self, x, b, label=None ):
+    self.p = Point( x, 0, 3 )
     self.label = label
-    self.oType = OBJECT_TYPE_EBASE
+    self.b = b
+    self.oType = OBJECT_TYPE_BUILDING
+    self.health = SI_BUILDING
+    self.colRect = ( -CityBuildings.imgInfo[ b ][ 3 ] / 20,
+                      CityBuildings.imgInfo[ b ][ 4 ] / 10,
+                      CityBuildings.imgInfo[ b ][ 3 ] / 20,
+                      0 )
 
-    if not EnemyBase.image:
-      img = Image.open( "images/backgrounds/base.gif" )
-      img = img.resize( ( 800, 600 ) )
-      EnemyBase.image = ImageTk.PhotoImage( img )
+    if not CityBuildings.imgInfo[ 0 ][ 0 ]: # If PhotoImage is None we haven't loaded yet
+      img = Image.open( "images/backgrounds/miscCity.gif" )
+
+      for imgParams in CityBuildings.imgInfo:
+        crop = img.crop( ( imgParams[ 1 ],
+                           imgParams[ 2 ],
+                           imgParams[ 1 ] + imgParams[ 3 ],
+                           imgParams[ 2 ] + imgParams[ 4 ] ) )
+        crop = crop.resize( ( imgParams[ 3 ] * 2, imgParams[ 4 ] * 2 ) )
+
+        imgParams[ 0 ] = ImageTk.PhotoImage( crop )
+
+  def processMessage( self, e, message, param=None ):
+    if message == MSG_COLLISION_DET:
+      if param.oType == OBJECT_TYPE_WEAPON:
+        self.health -= param.wDamage
+        if self.health < 0:
+          e.addObject( Explosion( self.p ) )
+
+  def update( self, e ):
+    if self.health < 0.0:
+      return False
+    return True
 
   def draw( self, e ):
     proj = projection( e.camera, self.p )
-    proj.x -= 30
-    proj.y -= 50
     if proj.x < SCREEN_WIDTH + 500 and proj.x > -500:
-      e.canvas.create_image( proj.x, proj.y - 150, image=EnemyBase.image )
-      e.canvas.create_text( proj.x, proj.y + 100, text=self.label, fill='black' )
+      sb = CityBuildings.imgInfo[ self.b ] # Sprite info shortcut.
+      e.canvas.create_image( proj.x, proj.y - sb[ 4 ], image=sb[ 0 ] )
+      if self.label:
+        e.canvas.create_text( proj.x, proj.y + 30, text=self.label, fill='black' )
+
+def buildCity( e, x, bCount, label=None ):
+  assert( bCount >= 2 and bCount < CityBuildings.numBuildings )
+
+  for b in range( 0, bCount ):
+    ix = random.randint( 0, CityBuildings.numBuildings - 1 )
+    e.objects.append( CityBuildings( x, ix, label=label ) )
+    x += CityBuildings.imgInfo[ ix ][ 3 ] / 10
+
+class Building(): # from miscBuildings.gif
+  imgInfo = [
+    # First row
+    [ None,   4,   3, 153, 94 ],  # PhotoImage, x,y,w,h
+    [ None, 164,   3, 151, 93 ],
+    [ None, 322,   9,  84, 88 ],
+    [ None, 413,   9,  85, 88 ],
+    [ None, 506,  10, 128, 38 ],
+    [ None, 637,  10, 127, 38 ],
+    [ None, 507,  51, 173, 63 ],
+    [ None, 687,  50,  86, 64 ],
+    # Row 2
+    [ None,   3, 104, 126, 85 ],
+    [ None,   3, 104, 126, 85 ],
+    [ None, 363, 103,  96, 85 ],
+    [ None, 463, 118,  54, 77 ],
+    [ None, 523, 121,  54, 74 ],
+    [ None, 580, 118,  98, 77 ],
+    [ None, 681, 118,  96, 77 ],
+    # Row 3
+    [ None,   3, 193,  90, 67 ],
+    [ None,   3, 193,  90, 67 ],
+    [ None, 189, 189,  67, 71 ],
+    [ None, 328, 198,  46, 62 ],
+    [ None, 424, 197,  93, 62 ],
+    [ None, 518, 197,  93, 62 ],
+    [ None, 619, 208,  95, 51 ],
+    [ None, 715, 208,  68, 51 ],
+    # Row 4
+
+    # Row 6
+    [ None,   4, 427, 120, 47 ],
+    [ None, 128, 429, 122, 45 ],
+  ]
+
+  numBuildings = len( imgInfo )
+
+  def __init__( self, x, b, label=None ):
+    self.oType = OBJECT_TYPE_EBASE
+    self.p = Point( x, 0, 3 )
+    self.colRect = ( -Building.imgInfo[ b ][ 3 ] / 20,
+                      Building.imgInfo[ b ][ 4 ] / 10,
+                      Building.imgInfo[ b ][ 3 ] / 20,
+                      0 )
+    self.label = label
+    self.b = b
+    self.health = SI_BUILDING
+
+    if not Building.imgInfo[ 0 ][ 0 ]: # If PhotoImage is None we haven't loaded yet
+      img = Image.open( "images/backgrounds/miscBuildings.gif" )
+
+      for imgParams in Building.imgInfo:
+        crop = img.crop( ( imgParams[ 1 ],
+                           imgParams[ 2 ],
+                           imgParams[ 1 ] + imgParams[ 3 ],
+                           imgParams[ 2 ] + imgParams[ 4 ] ) )
+        crop = crop.resize( ( imgParams[ 3 ] * 2, imgParams[ 4 ] * 2 ) )
+
+        imgParams[ 0 ] = ImageTk.PhotoImage( crop )
+
+  def processMessage( self, e, message, param=None ):
+    if message == MSG_COLLISION_DET:
+      if param.oType == OBJECT_TYPE_WEAPON:
+        self.health -= param.wDamage
+        if self.health < 0:
+          e.addObject( Explosion( self.p ) )
+
+  def update( self, e ):
+    if self.health < 0.0:
+      return False
+    return True
+
+  def draw( self, e ):
+    proj = projection( e.camera, self.p )
+    if proj.x < SCREEN_WIDTH + 500 and proj.x > -500:
+      sb = Building.imgInfo[ self.b ] # Sprite info shortcut.
+      e.canvas.create_image( proj.x, proj.y - sb[ 4 ], image=sb[ 0 ] )
+      if self.label:
+        e.canvas.create_text( proj.x, proj.y + 30, text=self.label, fill='black' )
+
+def buildBase( e, x, bCount, label=None ):
+  assert( bCount >= 2 and bCount < Building.numBuildings )
+
+  for b in range( 0, bCount ):
+    ix = random.randint( 0, Building.numBuildings - 1 )
+    e.objects.append( Building( x, ix, label=label ) )
+    x += Building.imgInfo[ ix ][ 3 ] / 10 + 10# adjust pixels to world coors.

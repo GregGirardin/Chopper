@@ -4,19 +4,19 @@ from utils import *
 from Tkinter import *
 from PIL import ImageTk, Image
 from explosions import *
+from missiles import *
 
 ##############################################################################
 class Bomber():
   images = []
 
-  def __init__( self, p, d=DIRECTION_LEFT ):
+  def __init__( self, p, v=None ):
     self.oType = OBJECT_TYPE_JET
     self.p = Point( p.x, p.y, p.z )
     self.colRect = ( -6, 2, 6, 0 )
     self.time = 0
-    self.d = d
-    self.vy = 0
-    self.structuralIntegrity = SI_BOMBER
+    self.v = v if v else Vector( PI, BOMBER_DELTA )
+    self.health = SI_BOMBER
 
     if len( Bomber.images ) == 0:
       img = Image.open( "images/vehicles/Jet1.png" )
@@ -30,24 +30,24 @@ class Bomber():
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
       if param.oType == OBJECT_TYPE_WEAPON:
-        self.structuralIntegrity -= param.wDamage
-        if self.structuralIntegrity < 0:
-          e.addObject( BombExplosion( self.p ) )
+        self.health -= param.wDamage
+        if self.health < 0:
+          e.addObject( Explosion( self.p ) )
 
   def update( self, e ):
-    self.time += 1
-    if self.structuralIntegrity < 0.0:
+    if self.health < 0.0:
       return False
-
-    self.p.x += BOMBER_DELTA if self.d == DIRECTION_RIGHT else -BOMBER_DELTA
+    self.time += 1
 
     if self.p.x < MIN_WORLD_X - 50:
-      e.addStatusMessage( "City has been bombed.", 25 )
+      e.cityBombed( 1 )
       self.p.y = random.randint( 20, 25 )
-      self.d = DIRECTION_RIGHT # fly back to base..
+      self.v.flipx()
     elif self.p.x > MAX_WORLD_X:
-      self.d = DIRECTION_LEFT
       self.p.y = random.randint( 10, 15 )
+      self.v.flipx()
+
+    self.p.move( self.v )
 
     return True
 
@@ -55,22 +55,22 @@ class Bomber():
     proj = projection( e.camera, self.p )
     projShadow = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
 
-    e.canvas.create_image( proj.x, proj.y - 20, image=Bomber.images[ self.d ] )
-    e.canvas.create_rectangle( proj.x - 60, projShadow.y,
-                               proj.x + 60, projShadow.y, outline="black" )
+    d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
+
+    e.canvas.create_image( proj.x, proj.y - 20, image=Bomber.images[ d ] )
+    e.canvas.create_rectangle( proj.x - 60, projShadow.y, proj.x + 60, projShadow.y, outline="black" )
 
 ##############################################################################
 class Bomber2():
   images = []
 
-  def __init__( self, p, d=DIRECTION_LEFT ):
+  def __init__( self, p, v=None ):
     self.oType = OBJECT_TYPE_JET
     self.p = Point( p.x, p.y, p.z )
     self.colRect = ( -4, 2,4, 0 )
     self.time = 0
-    self.d = d
-    self.vy = 0
-    self.structuralIntegrity = SI_BOMBER2
+    self.v = v if v else Vector( PI, BOMBER_DELTA )
+    self.health = SI_BOMBER2
 
     if len( Bomber2.images ) == 0:
       img = Image.open( "images/vehicles/Jet2.gif" )
@@ -84,22 +84,22 @@ class Bomber2():
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
       if param.oType == OBJECT_TYPE_WEAPON:
-        self.structuralIntegrity -= param.wDamage
-        if self.structuralIntegrity < 0:
-          e.addObject( BombExplosion( self.p ) )
+        self.health -= param.wDamage
+        if self.health < 0:
+          e.addObject( Explosion( self.p ) )
 
   def update( self, e ):
-    self.time += 1
-    if self.structuralIntegrity < 0.0:
+    if self.health < 0.0:
       return False
-
-    self.p.x += BOMBER_DELTA if self.d == DIRECTION_RIGHT else -BOMBER_DELTA
+    self.time += 1
 
     if self.p.x < MIN_WORLD_X - 50:
-      e.addStatusMessage( "City has been bombed.", 25 )
-      self.d = DIRECTION_RIGHT # fly back to base..
+      e.cityBombed( 1 )
+      self.v.flipx()  # change direction
     elif self.p.x > MAX_WORLD_X:
-      self.d = DIRECTION_LEFT
+      self.v.flipx()  # change direction
+
+    self.p.move( self.v )
 
     return True
 
@@ -107,21 +107,23 @@ class Bomber2():
     proj = projection( e.camera, self.p )
     projShadow = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
 
-    e.canvas.create_image( proj.x, proj.y - 40, image=Bomber2.images[ self.d ] )
+    d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
+
+    e.canvas.create_image( proj.x, proj.y - 40, image=Bomber2.images[ d ] )
     e.canvas.create_rectangle( proj.x - 60, projShadow.y, proj.x + 60, projShadow.y, outline="black" )
 
 ##############################################################################
 class Fighter():
   images = []
 
-  def __init__( self, p, d=DIRECTION_LEFT ):
+  def __init__( self, p, v=None ):
     self.oType = OBJECT_TYPE_JET
     self.p = Point( p.x, p.y, p.z )
     self.colRect = ( -4, 2, 4, 0 )
     self.time = 0
-    self.d = d
-    self.vy = 0
-    self.structuralIntegrity = SI_FIGHTER
+    self.v = v if v else Vector( PI, FIGHTER_DELTA)
+    self.nextMissile = 200
+    self.health = SI_FIGHTER
 
     if len( Fighter.images ) == 0:
       img = Image.open( "images/vehicles/Jet3.gif" )
@@ -135,22 +137,29 @@ class Fighter():
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
       if param.oType == OBJECT_TYPE_WEAPON:
-        self.structuralIntegrity -= param.wDamage
-        if self.structuralIntegrity < 0:
-          e.addObject( BombExplosion( self.p ) )
+        self.health -= param.wDamage
+        if self.health < 0:
+          e.addObject( Explosion( self.p ) )
 
   def update( self, e ):
-    self.time += 1
-    if self.structuralIntegrity < 0.0:
+    if self.health < 0.0:
       return False
+    self.time += 1
 
-    self.p.x += FIGHTER_DELTA if self.d == DIRECTION_RIGHT else -FIGHTER_DELTA
-    if self.p.x < e.chopper.p.x - 250:
-      self.d = DIRECTION_RIGHT
-    elif self.p.x > e.chopper.p.x + 250:
-      self.d = DIRECTION_LEFT
+    if math.fabs( self.p.x - e.chopper.p.x ) > 100:
+      self.v.flipx() # change direction
+
+    if self.nextMissile > 0:
+      self.nextMissile -= 1
     else:
-      pass # tbd, fighter AI here.
+      if( ( self.v.dx() > 0 and e.chopper.p.x > self.p.x ) or
+          ( self.v.dx() < 0 and e.chopper.p.x < self.p.x ) ):
+        d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
+
+        e.addObject( MissileSmall( self.p, self.v, d, oType=OBJECT_TYPE_E_WEAPON ) )
+        self.nextMissile = 50
+
+    self.p.move( self.v )
 
     return True
 
@@ -158,5 +167,6 @@ class Fighter():
     proj = projection( e.camera, self.p )
     projShadow = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
 
-    e.canvas.create_image( proj.x, proj.y - 25, image=Fighter.images[ self.d ] )
+    d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
+    e.canvas.create_image( proj.x, proj.y - 25, image=Fighter.images[ d ] )
     e.canvas.create_rectangle( proj.x - 60, projShadow.y, proj.x + 60, projShadow.y, outline="black" )

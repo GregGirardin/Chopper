@@ -38,6 +38,7 @@ class GameManager():
 
       choice = random.randint( 0, 50 )
 
+      # Always spawn enemies to the right of the chopper.
       if choice < 20:
         e.addObject( Jeep( Point( e.chopper.p.x + 100, 0, 0 ), DIRECTION_LEFT ) )
       elif choice < 25:

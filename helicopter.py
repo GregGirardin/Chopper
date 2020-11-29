@@ -33,7 +33,7 @@ class Helicopter():
     self.gunAngle = 0
     self.gunPosition = 0 # currently just a number from 0-4
 
-    self.structuralIntegrity = SI_CHOPPER
+    self.health = SI_CHOPPER
 
     # Target vx enum -> vx map
     self.tgtXVelDict = \
@@ -127,7 +127,7 @@ class Helicopter():
         self.gunAngle = self.gunAngleFromPosition[ self.gunPosition ]
     elif message == MSG_COLLISION_DET:
       if param.oType == OBJECT_TYPE_WEAPON:
-        self.structuralIntegrity -= param.wDamage
+        self.health -= param.wDamage
 
   def loadImages( self ):
     imageNames = ( "bodyForward",
@@ -139,7 +139,7 @@ class Helicopter():
         Helicopter.heloImages[ name ] = ImageTk.PhotoImage( Image.open( "images/chopper/" + name + ".gif" ) )
 
   def update( self, e ):
-    if self.structuralIntegrity < 0:
+    if self.health < 0:
       e.addStatusMessage( "Destroyed!" )
       return False
 
@@ -196,8 +196,6 @@ class Helicopter():
       self.tgtYVelocity = TGT_VEL_STOP
     elif self.p.y <= 0: # On the ground.
       self.p.y = 0
-      self.vy = 0
-      self.vx = 0
       self.tgtXVelocity = TGT_VEL_STOP
       self.tgtYVelocity = TGT_VEL_STOP
 
@@ -225,19 +223,20 @@ class Helicopter():
 
     # Weapon spawning
     if self.weapon != WEAPON_NONE:
+      v = vecFromComps( self.vx, self.vy )
       if self.weapon == WEAPON_BULLET:
         if self.chopperDir == DIRECTION_RIGHT:
           e.addObject( Bullet( Point( self.p.x + 1, self.p.y + 1, self.p.z ),
-                               math.fabs( self.vx ) + 2.5, self.gunAngle ) )
+                               Vector( math.fabs( self.vx ) + 2.5, self.gunAngle ) ) )
         elif self.chopperDir == DIRECTION_LEFT:
           e.addObject( Bullet( Point( self.p.x - 1, self.p.y + 1, self.p.z ),
-                               math.fabs( self.vx ) + 2.5, PI - self.gunAngle ) )
+                               Vector( math.fabs( self.vx ) + 2.5, PI - self.gunAngle ) ) )
       elif self.weapon == WEAPON_SMALL_MISSILE:
-        e.addObject( MissileSmall( self.p, self.vx, self.vy, self.chopperDir ) )
+        e.addObject( MissileSmall( self.p, v, self.chopperDir ) )
       elif self.weapon == WEAPON_LARGE_MISSILE:
-        e.addObject( MissileLarge( self.p, self.vx, self.vy, self.chopperDir ) )
+        e.addObject( MissileLarge( self.p, v, self.chopperDir ) )
       elif self.weapon == WEAPON_BOMB:
-        e.addObject( Bomb( self.p, self.vx, self.vy ) )
+        e.addObject( Bomb( self.p, v ) )
       self.weapon = WEAPON_NONE
 
     return True
@@ -421,7 +420,7 @@ class Helicopter():
     e.canvas.create_rectangle( 10, 10, 10 + self.fuel * 2, 15, fill="green" )
     # Structural integrity
     e.canvas.create_rectangle( 10, 15, 10 + 100.0 * 2, 20, fill="red" )
-    e.canvas.create_rectangle( 10, 15, 10 + self.structuralIntegrity * 2, 20, fill="green" )
+    e.canvas.create_rectangle( 10, 15, 10 + self.health * 2, 20, fill="green" )
     # Number of weapons
     for i in range( 0, self.countSmallMissiles ):
       e.canvas.create_image( 10, 50 + 6 * i, image=self.missileSImg )
