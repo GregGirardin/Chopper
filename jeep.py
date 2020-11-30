@@ -17,7 +17,8 @@ class Jeep():
     self.imgIx = 0
     self.bounceCount = 0
     self.v = v if v else Vector( PI, JEEP_DELTA )
-    self.health = SI_JEEP
+    self.si = SI_JEEP
+    self.points = POINTS_JEEP
 
     if len( Jeep.images ) == 0:
       img = Image.open( "images/vehicles/Jeep.png" )
@@ -34,8 +35,8 @@ class Jeep():
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
       if param.oType == OBJECT_TYPE_WEAPON:
-        self.health -= param.wDamage
-        if self.health < 0:
+        self.si -= param.wDamage
+        if self.si < 0:
           e.addObject( BombExplosion( self.p ) )
 
   # Draw wheels with circles instead of using sprites.
@@ -55,8 +56,8 @@ class Jeep():
       theta += ( 2 * PI ) / 4
 
   def update( self, e ):
-    if self.health < 0:
-      e.addStatusMessage( "Jeep destroyed." )
+    if self.si < 0:
+      e.qMessage( MSG_ENEMY_DESTROYED, self )
       return False
 
     if not self.bounceCount:
@@ -80,9 +81,7 @@ class Jeep():
 
     return True
 
-  def draw( self, e ):
-    proj = projection( e.camera, self.p )
-
+  def draw( self, e, p ):
     d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
 
     e.canvas.create_image( proj.x, proj.y - 30, image=Jeep.images[ d ][ self.imgIx ] )
@@ -101,7 +100,8 @@ class Transport1():
     self.time = 0
     self.bounceCount = 0
     self.v = v if v else Vector( PI, TRANSPORT1_DELTA )
-    self.health = SI_TRANSPORT1
+    self.si = SI_TRANSPORT1
+    self.points = POINTS_TRANSPORT
 
     if len( Transport1.images ) == 0:
       img = Image.open( "images/vehicles/transport1.gif" )
@@ -115,8 +115,8 @@ class Transport1():
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
       if param.oType == OBJECT_TYPE_WEAPON:
-        self.health -= param.wDamage
-        if self.health < 0:
+        self.si -= param.wDamage
+        if self.si < 0:
           e.addObject( BombExplosion( self.p ) )
 
   # Draw wheels with circles instead of using sprites.
@@ -138,8 +138,8 @@ class Transport1():
       theta += ( 2 * PI ) / 5
 
   def update( self, e ):
-    if self.health < 0:
-      e.addStatusMessage( "Transport destroyed!" )
+    if self.si < 0:
+      e.qMessage( MSG_ENEMY_DESTROYED, self )
       return False
 
     if self.p.x < MIN_WORLD_X or self.p.x > MAX_WORLD_X:
@@ -149,12 +149,10 @@ class Transport1():
 
     return True
 
-  def draw( self, e ):
-    proj = projection( e.camera, self.p )
-
+  def draw( self, e, p ):
     d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
 
-    e.canvas.create_image( proj.x, proj.y, image=Transport1.images[ d ] )
+    e.canvas.create_image( p.x, p.y, image=Transport1.images[ d ] )
 
     wheelOffs = [ [ -65, -25, 25, 60 ], [ -65, -25, 25, 65 ] ]
     for xOff in wheelOffs[ d ]:
@@ -171,7 +169,8 @@ class Transport2():
     self.time = 0
     self.bounceCount = 0
     self.v = v if v else Vector( PI, TRANSPORT2_DELTA )
-    self.health = SI_TRANSPORT2
+    self.si = SI_TRANSPORT2
+    self.points = POINTS_TRANSPORT
 
     if len( Transport2.images ) == 0:
       img = Image.open( "images/vehicles/transport2.gif" )
@@ -185,8 +184,8 @@ class Transport2():
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
       if param.oType == OBJECT_TYPE_WEAPON:
-        self.health -= param.wDamage
-        if self.health < 0:
+        self.si -= param.wDamage
+        if self.si < 0:
           e.addObject( BombExplosion( self.p ) )
 
   def drawWheel( self, c, x, y, radius, angle ):
@@ -204,8 +203,8 @@ class Transport2():
       theta += ( 2 * PI ) / 5
 
   def update( self, e ):
-    if self.health < 0:
-      e.addStatusMessage( "Transport destroyed!" )
+    if self.si < 0:
+      e.qMessage( MSG_ENEMY_DESTROYED, self )
       return False
 
     if self.p.x < MIN_WORLD_X or self.p.x > MAX_WORLD_X:
@@ -215,8 +214,7 @@ class Transport2():
 
     return True
 
-  def draw( self, e ):
-    proj = projection( e.camera, self.p )
+  def draw( self, e, p ):
     d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
 
     e.canvas.create_image( proj.x, proj.y, image=Transport2.images[ d ] )
@@ -235,7 +233,8 @@ class Truck():
     self.time = 0
     self.bounceCount = 0
     self.v = v if v else Vector( PI, TRUCK_DELTA )
-    self.health = SI_TRUCK
+    self.si = SI_TRUCK
+    self.points = POINTS_TRUCK
 
     if len( Truck.images ) == 0:
       img = Image.open( "images/vehicles/Truck1.gif" )
@@ -249,8 +248,8 @@ class Truck():
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
       if param.oType == OBJECT_TYPE_WEAPON:
-        self.health -= param.wDamage
-        if self.health < 0:
+        self.si -= param.wDamage
+        if self.si < 0:
           e.addObject( BombExplosion( self.p ) )
 
   # Draw wheels with circles instead of using sprites.
@@ -269,8 +268,8 @@ class Truck():
       theta += ( 2 * PI ) / 2
 
   def update( self, e ):
-    if self.health < 0:
-      e.addStatusMessage( "Truck destroyed!" )
+    if self.si < 0:
+      e.qMessage( MSG_ENEMY_DESTROYED, self )
       return False
 
     if self.p.x < MIN_WORLD_X or self.p.x > MAX_WORLD_X:
@@ -279,9 +278,7 @@ class Truck():
 
     return True
 
-  def draw( self, e ):
-    proj = projection( e.camera, self.p )
-
+  def draw( self, e, p ):
     d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
     e.canvas.create_image( proj.x, proj.y, image=Truck.images[ d ] )
 

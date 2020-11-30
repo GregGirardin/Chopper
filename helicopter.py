@@ -9,7 +9,7 @@ class Helicopter():
 
   def __init__( self, x, y, z ):
     self.oType = OBJECT_TYPE_CHOPPER
-    self.colRect = (-2, 3, 2, 0)
+    self.colRect = ( -2, 3, 2, 0 )
     self.p = Point( x, y, z )
     self.onGround = False
     self.rotorSpeed = ROTOR_SLOW
@@ -23,7 +23,7 @@ class Helicopter():
     self.chopperDir = DIRECTION_FORWARD
     self.weapon = WEAPON_NONE # This gets set and then fired in the next update()
                               # Trying to keep msg processing loosely coupled.
-    self.health = 100.0
+    self.si = SI_CHOPPER
     self.countLargeMissiles = 4
     self.countSmallMissiles = 20
     self.countBomb = 4
@@ -32,8 +32,6 @@ class Helicopter():
     self.displayStickCount = 0
     self.gunAngle = 0
     self.gunPosition = 0 # currently just a number from 0-4
-
-    self.health = SI_CHOPPER
 
     # Target vx enum -> vx map
     self.tgtXVelDict = \
@@ -126,8 +124,8 @@ class Helicopter():
         self.gunPosition += 1
         self.gunAngle = self.gunAngleFromPosition[ self.gunPosition ]
     elif message == MSG_COLLISION_DET:
-      if param.oType == OBJECT_TYPE_WEAPON:
-        self.health -= param.wDamage
+      if param.oType == OBJECT_TYPE_E_WEAPON:
+        self.si -= param.wDamage
 
   def loadImages( self ):
     imageNames = ( "bodyForward",
@@ -138,12 +136,13 @@ class Helicopter():
       for name in imageNames:
         Helicopter.heloImages[ name ] = ImageTk.PhotoImage( Image.open( "images/chopper/" + name + ".gif" ) )
 
+  ######################
   def update( self, e ):
-    if self.health < 0:
-      e.addStatusMessage( "Destroyed!" )
+    if self.si < 0:
+      e.qMessage( MSG_CHOPPER_DESTROYED, self )
       return False
 
-    # Handle fuel consumption
+    # Fuel consumption
     if self.p.y > 0.0:
       self.fuel -= .01
       if self.vx != 0:
@@ -162,7 +161,7 @@ class Helicopter():
       if self.rotorTheta < 0:
         self.rotorTheta += 2 * PI
 
-      # Accelerate to target velocities if we have fuel
+      # Accelerate to target velocities
       tv = self.tgtXVelDict[ self.tgtXVelocity ]
       if self.vx < tv:
         self.vx += CHOPPER_V_DELTA
@@ -198,8 +197,10 @@ class Helicopter():
       self.p.y = 0
       self.tgtXVelocity = TGT_VEL_STOP
       self.tgtYVelocity = TGT_VEL_STOP
+      self.vx = 0
+      self.vy = 0
 
-      if not self.onGround: # Only check once
+      if not self.onGround:
         for obj in e.bg_objects:
           # See if we're near a base
           if obj.oType == OBJECT_TYPE_BASE:
@@ -211,6 +212,7 @@ class Helicopter():
               self.countBomb = 4
               self.countBullet = 250
               self.onGround = True
+              self.si = SI_CHOPPER
               e.addStatusMessage( "Refueled", time=50 )
               break
     else: # Off the ground
@@ -218,7 +220,7 @@ class Helicopter():
 
     if self.vy > 0:
       self.rotorSpeed = ROTOR_FAST
-    elif self.p.y > 0:
+    else:
       self.rotorSpeed = ROTOR_SLOW
 
     # Weapon spawning
@@ -227,10 +229,10 @@ class Helicopter():
       if self.weapon == WEAPON_BULLET:
         if self.chopperDir == DIRECTION_RIGHT:
           e.addObject( Bullet( Point( self.p.x + 1, self.p.y + 1, self.p.z ),
-                               Vector( math.fabs( self.vx ) + 2.5, self.gunAngle ) ) )
+                               Vector( -self.gunAngle, math.fabs( self.vx ) + BULLET_DELTA ) ) )
         elif self.chopperDir == DIRECTION_LEFT:
           e.addObject( Bullet( Point( self.p.x - 1, self.p.y + 1, self.p.z ),
-                               Vector( math.fabs( self.vx ) + 2.5, PI - self.gunAngle ) ) )
+                               Vector( -( PI - self.gunAngle ), math.fabs( self.vx ) + BULLET_DELTA ) ) )
       elif self.weapon == WEAPON_SMALL_MISSILE:
         e.addObject( MissileSmall( self.p, v, self.chopperDir ) )
       elif self.weapon == WEAPON_LARGE_MISSILE:
@@ -241,8 +243,7 @@ class Helicopter():
 
     return True
 
-  def draw( self, e ):
-    proj = projection( e.camera, self.p )
+  def draw( self, e, p ):
     projShadow = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
 
     # Determine sprite and the corresponding rotor positions
@@ -284,27 +285,27 @@ class Helicopter():
     chopperAngle = self.angleDict[ bodyAngle ]
 
     # Translate x,y to be below the rotor
-    proj.y -= 30
+    p.y -= 30
     if self.chopperDir == DIRECTION_LEFT:
-      proj.x += 30
+      p.x += 30
       chopperAngle = -chopperAngle
-      tRotorX = proj.x + 65
+      tRotorX = p.x + 65
       rotorOffx = -35
     elif self.chopperDir == DIRECTION_RIGHT:
-      proj.x -= 24
-      tRotorX = proj.x - 65
+      p.x -= 24
+      tRotorX = p.x - 65
       rotorOffx = 20
     else:
       rotorOffx = 0
 
     if bodyAngle == ANGLE_0:
-      tRotorY = proj.y - 17
+      tRotorY = p.y - 17
     elif bodyAngle == ANGLE_U5:
-      tRotorY = proj.y - 10
+      tRotorY = p.y - 10
     elif bodyAngle == ANGLE_D5:
-      tRotorY = proj.y - 23
+      tRotorY = p.y - 23
     elif bodyAngle == ANGLE_D10:
-      tRotorY = proj.y - 28
+      tRotorY = p.y - 28
 
     imageKey = "body" # determine key for image.
     if self.chopperDir == DIRECTION_FORWARD:
@@ -323,14 +324,14 @@ class Helicopter():
 
     img = Helicopter.heloImages[ imageKey ]
 
-    e.canvas.create_image( proj.x, proj.y, image=img ) # puts 0,0 where the body hits the rotor
+    e.canvas.create_image( p.x, p.y, image=img ) # puts 0,0 where the body hits the rotor
     # Rotor
     ROTOR_LEN = 70
     rotorLen = ROTOR_LEN * math.cos( self.rotorTheta )
-    e.canvas.create_line( ( proj.x + rotorOffx ) + rotorLen * math.cos( chopperAngle ),
-                          ( proj.y - 12 )        + rotorLen * math.sin( chopperAngle ),
-                          ( proj.x + rotorOffx ) + rotorLen * math.cos( chopperAngle + PI ),
-                          ( proj.y - 12 )        + rotorLen * math.sin( chopperAngle + PI ) )
+    e.canvas.create_line( ( p.x + rotorOffx ) + rotorLen * math.cos( chopperAngle ),
+                          ( p.y - 12 )        + rotorLen * math.sin( chopperAngle ),
+                          ( p.x + rotorOffx ) + rotorLen * math.cos( chopperAngle + PI ),
+                          ( p.y - 12 )        + rotorLen * math.sin( chopperAngle + PI ) )
     # Tail rotor
     if self.chopperDir != DIRECTION_FORWARD:
       TAIL_ROTOR_LEN = 20
@@ -343,7 +344,7 @@ class Helicopter():
                             tRotorY + TAIL_ROTOR_LEN * math.sin( tmpTheta + PI ) )
 
     # Shadow
-    e.canvas.create_rectangle( proj.x - 60, projShadow.y, proj.x + 60, projShadow.y, outline="black" )
+    e.canvas.create_rectangle( p.x - 60, projShadow.y, p.x + 60, projShadow.y, outline="black" )
 
     # Statuses
     if self.displayStickCount:
@@ -359,8 +360,8 @@ class Helicopter():
         TGT_VEL_RIGHT_SLOW  :  2,
         TGT_VEL_RIGHT_FAST  :  3
       }
-      dispX = proj.x
-      dispY = proj.y - 50 # display floating above the chopper
+      dispX = p.x
+      dispY = p.y - 50 # display floating above the chopper
       e.canvas.create_rectangle( dispX - 2, dispY + 20, dispX + 2, dispY + 25, fill="black" ) # a red block in the center
       xLen = tgtVelDispDict[ self.tgtXVelocity ]
       if xLen:
@@ -399,16 +400,16 @@ class Helicopter():
 
     # Draw gun
     if self.chopperDir == DIRECTION_RIGHT:
-      gx = proj.x + 50
-      gy = proj.y + 15
+      gx = p.x + 50
+      gy = p.y + 15
       e.canvas.create_line( gx, gy,
                             gx + 10.0 * math.cos( self.gunAngle ),
                             gy - 10.0 * math.sin( self.gunAngle ),
                             fill="gray",
                             width=3 )
     elif self.chopperDir == DIRECTION_LEFT:
-      gx = proj.x - 60
-      gy = proj.y + 15
+      gx = p.x - 60
+      gy = p.y + 15
       e.canvas.create_line( gx, gy,
                             gx - 10.0 * math.cos( -self.gunAngle ),
                             gy + 10.0 * math.sin( -self.gunAngle ),
@@ -419,8 +420,8 @@ class Helicopter():
     e.canvas.create_rectangle( 10, 10, 10 + 100.0 * 2, 15, fill="red" )
     e.canvas.create_rectangle( 10, 10, 10 + self.fuel * 2, 15, fill="green" )
     # Structural integrity
-    e.canvas.create_rectangle( 10, 15, 10 + 100.0 * 2, 20, fill="red" )
-    e.canvas.create_rectangle( 10, 15, 10 + self.health * 2, 20, fill="green" )
+    e.canvas.create_rectangle( 10, 15, 10 + 200, 20, fill="red" )
+    e.canvas.create_rectangle( 10, 15, int( 10 + self.si * 200/SI_CHOPPER ), 20, fill="green" )
     # Number of weapons
     for i in range( 0, self.countSmallMissiles ):
       e.canvas.create_image( 10, 50 + 6 * i, image=self.missileSImg )
@@ -430,4 +431,3 @@ class Helicopter():
       e.canvas.create_image( 10 + 10 * i, 35, image=self.bombImg )
     t = "Rounds %s" % self.countBullet
     e.canvas.create_text( 100, 30, text=t )
-

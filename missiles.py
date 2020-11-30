@@ -4,6 +4,7 @@ from utils import *
 from explosions import *
 from Tkinter import *
 from PIL import ImageTk, Image
+from copy import copy
 
 BULLET_LIFETIME = 100
 
@@ -14,7 +15,7 @@ class Bullet():
     self.p = Point( p.x, p.y, p.z )
     self.colRect = ( 0, 0, 1, 1 )
     self.time = 0
-    self.v = v
+    self.v = copy( v )
 
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
@@ -34,12 +35,8 @@ class Bullet():
 
     return True
 
-  def draw( self, e ):
-    proj = projection( e.camera, self.p )
-    if proj.x > SCREEN_WIDTH + 100 or proj.x < -100:
-      return
-
-    e.canvas.create_line( proj.x, proj.y, proj.x + self.v.dx(), proj.y + self.v.dy(), fill="black", width=2 )
+  def draw( self, e, p ):
+    e.canvas.create_line( p.x, p.y, p.x + self.v.dx() * 4, p.y - self.v.dy() * 4, fill="black", width=2 )
 
 # Base class for missiles
 class MissileBase():
@@ -47,9 +44,9 @@ class MissileBase():
     self.oType = oType
     self.p = Point( p.x, p.y, p.z )
     self.colRect = ( -1, 1, 1, 0 )
-    self.v = v # Initial velocity Vector
+    self.v = copy( v ) # Initial velocity Vector
     self.d = d # desired direction. Initial velocity may not be in that direction.
-    self.fuel = 60
+    self.fuel = 100
     self.time = 0
     self.thrust = False
 
@@ -112,16 +109,15 @@ class MissileSmall( MissileBase ):
   def update( self, e ):
     return MissileBase.update( self, e )
 
-  def draw( self, e ):
-    proj = projection( e.camera, self.p )
+  def draw( self, e, p ):
     projShadow = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
     d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
 
-    e.canvas.create_image( proj.x, proj.y, image=MissileSmall.missileImagesS[ d ] )
+    e.canvas.create_image( p.x, p.y, image=MissileSmall.missileImagesS[ d ] )
     if self.thrust:
       xOff = -30 if d else 30
-      e.canvas.create_image( proj.x + xOff, proj.y, image=MissileSmall.exhaustImagesS[ d ] )
-    e.canvas.create_rectangle( proj.x - 10, projShadow.y, proj.x + 10, projShadow.y, outline="black" )
+      e.canvas.create_image( p.x + xOff, p.y, image=MissileSmall.exhaustImagesS[ d ] )
+    e.canvas.create_rectangle( p.x - 10, projShadow.y, p.x + 10, projShadow.y, outline="black" )
 
 class MissileLarge( MissileBase ):
   missileImagesL = []
@@ -147,15 +143,14 @@ class MissileLarge( MissileBase ):
   def update( self, e ):
     return MissileBase.update( self, e )
 
-  def draw( self, e ):
-    proj = projection( e.camera, self.p )
+  def draw( self, e, p ):
     projShadow = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
 
-    e.canvas.create_image( proj.x, proj.y, image=MissileLarge.missileImagesL[ self.d ] )
+    e.canvas.create_image( p.x, p.y, image=MissileLarge.missileImagesL[ self.d ] )
     if self.thrust:
       xOff = -40 if self.d else 40
-      e.canvas.create_image( proj.x + xOff, proj.y, image=MissileLarge.exhaustImagesL[ self.d ] )
-    e.canvas.create_rectangle( proj.x - 20, projShadow.y, proj.x + 20, projShadow.y, outline="black" )
+      e.canvas.create_image( p.x + xOff, p.y, image=MissileLarge.exhaustImagesL[ self.d ] )
+    e.canvas.create_rectangle( p.x - 20, projShadow.y, p.x + 20, projShadow.y, outline="black" )
 
 class Bomb():
   bombImage = None
@@ -183,8 +178,7 @@ class Bomb():
       e.addObject( BombExplosion( self.p ) )
       return False
 
-  def draw( self, e ):
-    proj = projection( e.camera, self.p )
+  def draw( self, e, p ):
     ps = projection( e.camera, Point( self.p.x, 0, self.p.z ) ) # Shadow
-    e.canvas.create_image( proj.x, proj.y, image=Bomb.bombImage )
-    e.canvas.create_rectangle( proj.x - 5, ps.y, proj.x + 5, ps.y, outline="black" )
+    e.canvas.create_image( p.x, p.y, image=Bomb.bombImage )
+    e.canvas.create_rectangle( p.x - 5, ps.y, p.x + 5, ps.y, outline="black" )

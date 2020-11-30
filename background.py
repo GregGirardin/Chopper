@@ -10,7 +10,7 @@ class SkyGround():
     self.p = Point( 0, 0, HORIZON_DISTANCE )
     self.oType = OBJECT_TYPE_NONE
 
-  def draw( self, e ):
+  def draw( self, e, p ):
     hProj = projection( e.camera, self.p )
     # sky
     p = [ 0, 0, SCREEN_WIDTH, 0, SCREEN_WIDTH, hProj.y, 0, hProj.y ]
@@ -20,7 +20,8 @@ class SkyGround():
     e.canvas.create_polygon( p, fill="darkgreen", outline="black" )
 
 class Mountain():
-  '''/
+  '''
+    Triangle mountains.
     Mountain is defined by X coordinate, width, Height, and Z position (distance from camera)
         TT
        TTTT
@@ -29,6 +30,17 @@ class Mountain():
     BBBBBBBBBB
     X
     |--- W --|
+
+    To generate a range of mountains..
+
+    for z in( MAX_MTN_DISTANCE, MAX_MTN_DISTANCE * .75, MAX_MTN_DISTANCE * .5 ):
+      for _ in range( 1, MTN_PER_LAYER ):
+        self.bg_objects.append( Mountain( random.randint( MIN_WORLD_X - 1000,
+                                                          MAX_WORLD_X + 1000 ),
+                                          random.randint( MAX_MTN_WIDTH / 4, MAX_MTN_WIDTH ),
+                                          random.randint( MAX_MTN_HEIGHT / 4, MAX_MTN_HEIGHT ),
+
+
   '''
   def __init__( self, x, w, h, z ):
     self.x = x
@@ -37,9 +49,9 @@ class Mountain():
     self.z = z
     self.color = "gray"
     self.p = Point( x, 0, z )
-    self.oType = OBJECT_TYPE_EBASE
+    self.oType = OBJECT_TYPE_NONE
 
-  def draw( self, e ):
+  def draw( self, e, p ):
     # world coordinates
     pL = Point( self.x, 0, self.z ) # base left
     pR = Point( self.x + self.w, 0, self.z ) # base right
@@ -57,24 +69,19 @@ class Mountain():
 
     e.canvas.create_polygon( p, fill="grey", outline="black" )
 
-class City():
+class MountainImg():
   image = None
 
   def __init__( self, x, y, z ):
     self.p = Point( x, y, z )
     self.oType = OBJECT_TYPE_NONE
 
-    if not City.image:
-      img = Image.open( "images/backgrounds/city.png" )
-      img = img.resize( ( 1600, 800 ) )
-      City.image = ImageTk.PhotoImage( img )
+    if not MountainImg.image:
+      img = Image.open( "images/backgrounds/Mountains1.gif" )
+      MountainImg.image = ImageTk.PhotoImage( img )
 
-  def draw( self, e ):
-    proj = projection( e.camera, self.p )
-    proj.x -= 400 # make right edge the center
-    proj.y -= 250 # shift up.
-    if proj.x < SCREEN_WIDTH + 800 and proj.x > -800:
-      e.canvas.create_image( proj.x, proj.y, image=City.image )
+  def draw( self, e, p ):
+    e.canvas.create_image( p.x, p.y - 204, image=MountainImg.image )
 
 class Cloud():
   image = None
@@ -87,14 +94,12 @@ class Cloud():
       img = Image.open( "images/backgrounds/cloud.gif" )
       Cloud.image = ImageTk.PhotoImage( img )
 
-  def draw( self, e ):
-    proj = projection( e.camera, self.p )
-    if proj.x > SCREEN_WIDTH + 500: # Wrap
-      self.p.x -= 3000
-    elif proj.x < -500:
-      self.p.x += 3000
-    else:
-      e.canvas.create_image( proj.x, proj.y, image=Cloud.image )
+  def draw( self, e, p ):
+    self.p.x -= 1 # background object so we don't call update..
+    if self.p.x < MIN_WORLD_X - 1000:
+      self.p.x = MAX_WORLD_X
+
+    e.canvas.create_image( p.x, p.y, image=Cloud.image )
 
 class Rock():
   image = None
@@ -107,14 +112,8 @@ class Rock():
       img = Image.open( "images/backgrounds/rock1.gif" )
       Rock.image = ImageTk.PhotoImage( img )
 
-  def draw( self, e ):
-    proj = projection( e.camera, self.p )
-    if proj.x > SCREEN_WIDTH + 500:
-      self.p.x -= 1000
-    elif proj.x < -500:
-      self.p.x += 1000
-    else:
-      e.canvas.create_image( proj.x, proj.y, image=Rock.image )
+  def draw( self, e, p ):
+    e.canvas.create_image( p.x, p.y, image=Rock.image )
 
 class Grass():
   image = None
@@ -128,18 +127,12 @@ class Grass():
       img = img.resize( ( 200, 30 ) )
       Grass.image = ImageTk.PhotoImage( img )
 
-  def draw( self, e ):
-    proj = projection( e.camera, self.p )
-    if proj.x > SCREEN_WIDTH + 500:
-      self.p.x -= 1000
-    elif proj.x < -500:
-      self.p.x += 1000
-    else:
-      e.canvas.create_image( proj.x, proj.y, image=Grass.image )
+  def draw( self, e, p ):
+    e.canvas.create_image( p.x, p.y, image=Grass.image )
 
 class Tree():
   images = []
-
+  offsets = [ 50, 117, 39, 20 ]
   def __init__( self, x, y, z ):
     self.p = Point( x, y, z )
     self.oType = OBJECT_TYPE_NONE
@@ -150,11 +143,11 @@ class Tree():
       Tree.images.append( ImageTk.PhotoImage( rs_img ) )
 
       img = Image.open( "images/backgrounds/tree.gif" )
-      rs_img = img.resize( ( 380 / 2, 468 / 2 ) )
+      rs_img = img.resize( ( 190, 234 ) )
       Tree.images.append( ImageTk.PhotoImage( rs_img ) )
-      rs_img = img.resize( ( 380 / 6, 468 / 6 ) )
+      rs_img = img.resize( ( 63, 78 ) )
       Tree.images.append( ImageTk.PhotoImage( rs_img ) )
-      rs_img = img.resize( ( 380 / 12, 468 / 12 ) )
+      rs_img = img.resize( ( 32, 39 ) )
       Tree.images.append( ImageTk.PhotoImage( rs_img ) )
 
     if self.p.z > 250:
@@ -164,15 +157,9 @@ class Tree():
     else:
       self.imgIndex = random.randint( 0, 2 ) # two bigger gifs..
 
-  def draw( self, e ):
-    proj = projection( e.camera, self.p )
-    proj.y -= 20 # make x,y the bottom of the gif
-    if proj.x > SCREEN_WIDTH + 100: # wrap / repeat the trees
-      self.p.x -= 1000
-    elif proj.x < -100:
-      self.p.x += 1000
-
-    e.canvas.create_image( proj.x, proj.y, image=Tree.images[ self.imgIndex ] )
+  def draw( self, e, p ):
+    e.canvas.create_image( p.x, p.y - Tree.offsets[ self.imgIndex ],
+                           image=Tree.images[ self.imgIndex ] )
 
 class Base():
   image = None
@@ -188,13 +175,10 @@ class Base():
       img = img.resize( ( 600, 300 ) )
       Base.image = ImageTk.PhotoImage( img )
 
-  def draw( self, e ):
+  def draw( self, e, p ):
     proj = projection( e.camera, self.p )
-    proj.x -= 30
-    proj.y -= 50
-    if proj.x < SCREEN_WIDTH + 500 and proj.x > -500:
-      e.canvas.create_image( proj.x, proj.y, image=Base.image )
-      e.canvas.create_text( proj.x, proj.y + 100, text=self.label, fill='black' )
+    e.canvas.create_image( proj.x - 30, proj.y - 50, image=Base.image )
+    e.canvas.create_text( proj.x - 50, proj.y + 50, text=self.label, fill='black' )
 
 class CityBuildings():
   imgInfo =\
@@ -224,9 +208,9 @@ class CityBuildings():
     self.b = b
     self.oType = OBJECT_TYPE_BUILDING
     self.health = SI_BUILDING
-    self.colRect = ( -CityBuildings.imgInfo[ b ][ 3 ] / 20,
-                      CityBuildings.imgInfo[ b ][ 4 ] / 10,
-                      CityBuildings.imgInfo[ b ][ 3 ] / 20,
+    self.colRect = ( -CityBuildings.imgInfo[ b ][ 3 ] / 40,
+                      CityBuildings.imgInfo[ b ][ 4 ] / 20,
+                      CityBuildings.imgInfo[ b ][ 3 ] / 40,
                       0 )
 
     if not CityBuildings.imgInfo[ 0 ][ 0 ]: # If PhotoImage is None we haven't loaded yet
@@ -237,7 +221,7 @@ class CityBuildings():
                            imgParams[ 2 ],
                            imgParams[ 1 ] + imgParams[ 3 ],
                            imgParams[ 2 ] + imgParams[ 4 ] ) )
-        crop = crop.resize( ( imgParams[ 3 ] * 2, imgParams[ 4 ] * 2 ) )
+        crop = crop.resize( ( imgParams[ 3 ], imgParams[ 4 ] ) )
 
         imgParams[ 0 ] = ImageTk.PhotoImage( crop )
 
@@ -250,16 +234,15 @@ class CityBuildings():
 
   def update( self, e ):
     if self.health < 0.0:
+      e.qMessage( MSG_BUILDING_DESTROYED, self )
       return False
     return True
 
-  def draw( self, e ):
-    proj = projection( e.camera, self.p )
-    if proj.x < SCREEN_WIDTH + 500 and proj.x > -500:
-      sb = CityBuildings.imgInfo[ self.b ] # Sprite info shortcut.
-      e.canvas.create_image( proj.x, proj.y - sb[ 4 ], image=sb[ 0 ] )
-      if self.label:
-        e.canvas.create_text( proj.x, proj.y + 30, text=self.label, fill='black' )
+  def draw( self, e, p ):
+    sb = CityBuildings.imgInfo[ self.b ] # Sprite info shortcut.
+    e.canvas.create_image( p.x, p.y - sb[ 4 ] / 2, image=sb[ 0 ] )
+    if self.label:
+      e.canvas.create_text( p.x, p.y, text=self.label, fill='black' )
 
 def buildCity( e, x, bCount, label=None ):
   assert( bCount >= 2 and bCount < CityBuildings.numBuildings )
@@ -267,10 +250,11 @@ def buildCity( e, x, bCount, label=None ):
   for b in range( 0, bCount ):
     ix = random.randint( 0, CityBuildings.numBuildings - 1 )
     e.objects.append( CityBuildings( x, ix, label=label ) )
-    x += CityBuildings.imgInfo[ ix ][ 3 ] / 10
+    x += CityBuildings.imgInfo[ ix ][ 3 ] / 20
 
 class Building(): # from miscBuildings.gif
-  imgInfo = [
+  imgInfo = \
+  [
     # First row
     [ None,   4,   3, 153, 94 ],  # PhotoImage, x,y,w,h
     [ None, 164,   3, 151, 93 ],
@@ -298,7 +282,6 @@ class Building(): # from miscBuildings.gif
     [ None, 619, 208,  95, 51 ],
     [ None, 715, 208,  68, 51 ],
     # Row 4
-
     # Row 6
     [ None,   4, 427, 120, 47 ],
     [ None, 128, 429, 122, 45 ],
@@ -307,7 +290,7 @@ class Building(): # from miscBuildings.gif
   numBuildings = len( imgInfo )
 
   def __init__( self, x, b, label=None ):
-    self.oType = OBJECT_TYPE_EBASE
+    self.oType = OBJECT_TYPE_E_BUILDING
     self.p = Point( x, 0, 3 )
     self.colRect = ( -Building.imgInfo[ b ][ 3 ] / 20,
                       Building.imgInfo[ b ][ 4 ] / 10,
@@ -315,7 +298,7 @@ class Building(): # from miscBuildings.gif
                       0 )
     self.label = label
     self.b = b
-    self.health = SI_BUILDING
+    self.si = SI_BUILDING
 
     if not Building.imgInfo[ 0 ][ 0 ]: # If PhotoImage is None we haven't loaded yet
       img = Image.open( "images/backgrounds/miscBuildings.gif" )
@@ -332,22 +315,21 @@ class Building(): # from miscBuildings.gif
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
       if param.oType == OBJECT_TYPE_WEAPON:
-        self.health -= param.wDamage
-        if self.health < 0:
+        self.si -= param.wDamage
+        if self.si < 0:
           e.addObject( Explosion( self.p ) )
 
   def update( self, e ):
-    if self.health < 0.0:
+    if self.si < 0.0:
+      e.qMessage( MSG_E_BUILDING_DESTROYED, self )
       return False
     return True
 
-  def draw( self, e ):
-    proj = projection( e.camera, self.p )
-    if proj.x < SCREEN_WIDTH + 500 and proj.x > -500:
-      sb = Building.imgInfo[ self.b ] # Sprite info shortcut.
-      e.canvas.create_image( proj.x, proj.y - sb[ 4 ], image=sb[ 0 ] )
-      if self.label:
-        e.canvas.create_text( proj.x, proj.y + 30, text=self.label, fill='black' )
+  def draw( self, e, p ):
+    sb = Building.imgInfo[ self.b ] # Sprite info shortcut.
+    e.canvas.create_image( p.x, p.y - sb[ 4 ], image=sb[ 0 ] )
+    if self.label:
+      e.canvas.create_text( p.x, p.y + 30, text=self.label, fill='black' )
 
 def buildBase( e, x, bCount, label=None ):
   assert( bCount >= 2 and bCount < Building.numBuildings )
@@ -355,4 +337,4 @@ def buildBase( e, x, bCount, label=None ):
   for b in range( 0, bCount ):
     ix = random.randint( 0, Building.numBuildings - 1 )
     e.objects.append( Building( x, ix, label=label ) )
-    x += Building.imgInfo[ ix ][ 3 ] / 10 + 10# adjust pixels to world coors.
+    x += Building.imgInfo[ ix ][ 3 ] / 10 # adjust pixels to world coors.

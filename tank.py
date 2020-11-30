@@ -16,7 +16,8 @@ class Tank():
     self.p = Point( p.x, p.y, p.z )
     self.cannonAngle = 3 # 0 - 3
     self.colRect = ( -4, 4, 4, 0 )
-    self.health = SI_TANK
+    self.si = SI_TANK
+    self.points = POINTS_TANK
 
     if len( Tank.tankImages ) == 0:
       img = Image.open( "images/vehicles/Tank.gif" ) # 256x128 rectangular sprites
@@ -58,12 +59,13 @@ class Tank():
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
       if param.oType == OBJECT_TYPE_WEAPON:
-        self.health -= param.wDamage
-        if self.health < 0:
+        self.si -= param.wDamage
+        if self.si < 0:
           e.addObject( BombExplosion( Point( self.p.x, self.p.y, self.p.z ) ) )
 
   def update( self, e ):
-    if self.health < 0:
+    if self.si < 0:
+      e.qMessage( MSG_ENEMY_DESTROYED, self )
       return False
 
     self.p.move( self.v )
@@ -73,9 +75,7 @@ class Tank():
 
     return True
 
-  def draw( self, e ):
-    p = projection( e.camera, self.p )
-
+  def draw( self, e, p ):
     of = [ [ 0, -60, -110, -70 ], # Display offsets so 0,0 is bottom center
            [ 0, -60,  110, -70 ] ]
 

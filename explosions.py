@@ -47,14 +47,9 @@ class Explosion():
       return False
     return True
 
-  def draw( self, e ):
+  def draw( self, e, p ):
     img = Explosion.images[ self.explosionIx ][ self.imgIx ]
-
-    proj = projection( e.camera, self.p )
-    if proj.x > SCREEN_WIDTH + 100 or proj.x < -100:
-      return
-
-    e.canvas.create_image( proj.x, proj.y, image=img )
+    e.canvas.create_image( p.x, p.y, image=img )
 
 class BombExplosion(): # Explosion that looks like something fell vertically.
   images = [ ]
@@ -87,19 +82,14 @@ class BombExplosion(): # Explosion that looks like something fell vertically.
     self.time += 1
     self.imgIx = self.time / 2
     if self.imgIx >= len( BombExplosion.images ):
-      e.addObject( SmokeV( Point( self.p.x,self.p.y - 10, self.p.z ) ) )
+      # e.addObject( SmokeV( Point( self.p.x,self.p.y - 10, self.p.z ) ) )
       return False
 
     return True
 
-  def draw( self, e ):
+  def draw( self, e, p ):
     img = BombExplosion.images[ self.imgIx ]
-
-    proj = projection( e.camera, self.p )
-    if proj.x > SCREEN_WIDTH + 100 or proj.x < -100:
-      return
-
-    e.canvas.create_image( proj.x, proj.y + 100, image=img )
+    e.canvas.create_image( p.x, p.y + 100, image=img )
 
 class SmokeA(): # Small puff of smoke
   images = [ ]
@@ -131,14 +121,9 @@ class SmokeA(): # Small puff of smoke
 
     return True
 
-  def draw( self, e ):
+  def draw( self, e, p ):
     img = SmokeA.images[ self.imgIx ]
-
-    proj = projection( e.camera, self.p )
-    if proj.x > SCREEN_WIDTH + 100 or proj.x < -100:
-      return
-
-    e.canvas.create_image( proj.x, proj.y - 20, image=img )
+    e.canvas.create_image( p.x, p.y - 20, image=img )
 
 class SmokeB(): # Larger smoke puff
   images = []
@@ -170,14 +155,9 @@ class SmokeB(): # Larger smoke puff
 
     return True
 
-  def draw( self, e ):
+  def draw( self, e, p ):
     img = SmokeB.images[ self.imgIx ]
-
-    proj = projection( e.camera, self.p )
-    if proj.x > SCREEN_WIDTH + 100 or proj.x < -100:
-      return
-
-    e.canvas.create_image( proj.x, proj.y, image=img )
+    e.canvas.create_image( p.x, p.y, image=img )
 
 class SmokeV(): # Vertical smoke
   images = [ ]
@@ -216,11 +196,6 @@ class SmokeV(): # Vertical smoke
 
     return True
 
-  def draw( self, e ):
+  def draw( self, e, p ):
     img = SmokeV.images[ self.imgIx ]
-
-    proj = projection( e.camera, self.p )
-    if proj.x > SCREEN_WIDTH + 100 or proj.x < -100:
-      return
-
-    e.canvas.create_image( proj.x, proj.y - 90, image=img )
+    e.canvas.create_image( p.x, p.y - 90, image=img )

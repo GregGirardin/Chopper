@@ -24,59 +24,93 @@ class displayEngine():
     self.canvas.pack()
 
     self.camera = Point( 0, 15, CAM_Z )
-    self.currentCamOff = -50 # Start from the left initially to show the City
-    self.debugCoords = True # True # debug. Show x,y and collision box
-
-    self.chopper = None # keep a reference since a
+    self.currentCamOff = 0 # Start from the left initially to show the City
+    self.debugCoords = False # True # debug. Show x,y and collision box
+    self.chopper = None
     self.citySI = 100.0
     self.level = 1
+    self.statusMessages = []
+    self.statusMsgTime = 0
+    self.msgQ = []
 
-  def cityBombed( self, si ):
-    self.cityCasualties += si
-    self.displayCityTime = 30
-    self.addStatusMessage( "City has been bombed.", 25 )
+  # this is called from objects probably in the context of update()
+  # take actions later in processMessage() after all update()s have been called.
+  def qMessage( self, m, param ):
+    self.msgQ.append( ( m, param ) )
 
-  def newGame( self ):
+  def processMessage( self, m, param ):
+
+    if m == MSG_BUILDING_DESTROYED:
+      anyBuildings = False
+      for o in self.objects:
+        if o.oType == OBJECT_TYPE_BUILDING:
+          anyBuildings = True
+          break
+      if not anyBuildings:
+        self.addStatusMessage( "City has been destroyed." )
+      else:
+        self.addStatusMessage( "City has been bombed." )
+
+    elif m == MSG_E_BUILDING_DESTROYED:
+      anyBuildings = False
+      for o in self.objects:
+        if o.oType == OBJECT_TYPE_E_BUILDING:
+          anyBuildings = True
+          break
+      if not anyBuildings:
+        self.addStatusMessage( "Enemy base has been destroyed." )
+
+      elif m == MSG_ENEMY_DESTROYED:
+        # see if it's the last one.
+        self.score += param.points
+        anyEnemies = False
+        for o in self.objects:
+          if o.oType >= OBJECT_TYPE_FIRST_ENEMY and o.oType <= OBJECT_TYPE_LAST_ENEMY:
+            anyEnemies = True
+            break
+        if not anyEnemies:
+          self.addStatusMessage( "All enemies destroyed" )
+
+      elif m == MSG_CHOPPER_DESTROYED:
+        self.addStatusMessage( "Chopper Destroyed!" )
+
+  def newLevel( self, level ):
     global chopper
 
-    self.statusMessages = []
+    self.statusMessages = [ ]
     self.statusMsgTime = None
     self.statusMsgCurrent = None
 
-    self.cityCasualties = 0
-    self.level = 1
-
+    self.level = level
+    self.levelComplete = False
     self.time = 0
     self.bg_objects = [] # Background objects that don't interact with anything.. no collisions or update
     self.objects = [] # buildings / vehicles / smoke / bullets. Things that require updates and collisions
     # Two lists to speed up collision detection and other interactions of objects that can interact.
+    # We call update() and check for collisions for objects[]
 
     # Sky and ground
     self.bg_objects.append( SkyGround() )
 
-    # Mountains
-    for z in( MAX_MTN_DISTANCE, MAX_MTN_DISTANCE * .75, MAX_MTN_DISTANCE * .5 ):
-      for _ in range( 1, MTN_PER_LAYER ):
-        self.bg_objects.append( Mountain( random.randint( MIN_WORLD_X - 1000,
-                                                          MAX_WORLD_X + 1000 ),
-                                          random.randint( MAX_MTN_WIDTH / 4, MAX_MTN_WIDTH ),
-                                          random.randint( MAX_MTN_HEIGHT / 4, MAX_MTN_HEIGHT ),
-                                          z ) )
+    # Mountain range
+    self.bg_objects.append( MountainImg( 200, 0, HORIZON_DISTANCE / 2 ) )
 
     # Clouds
     for z in range( 1, 10 ):
       self.bg_objects.append( Cloud( random.randint( MIN_WORLD_X, MAX_WORLD_X ),
                                      random.randint( 150, 250 ),
-                                     random.randint( 500, 1000 ) ) ) # in front of the mountains
+                                     random.randint( 500, 2000 ) ) ) # in front of the mountains
     # Rocks
+    '''
     for z in range( -5, 9, 1 ): # Z is behind projection plane but the math works.
       x = random.randint( -500, 500 )
       if math.fabs( x ) > 30:
         self.bg_objects.append( Rock( x, 0, z ) )
+    '''
 
     # Grass
-    for z in range( 20, 30, 1 ):
-      x = random.randint( -300, 300 )
+    for z in range( 20, 40, 1 ):
+      x = random.randint( -20, 1000 )
       if math.fabs( x ) > 20:
         self.bg_objects.append( Grass( x, 0, z ) )
 
@@ -96,15 +130,15 @@ class displayEngine():
     self.objects.append( chopper )
     self.chopper = chopper
 
-    buildCity( self, MIN_WORLD_X - 50, 8 )
-    buildBase( self, MAX_WORLD_X / 3, 2 ) # construct enemy base
+    buildCity( self, MIN_WORLD_X - 10, 10 )
+    buildBase( self, MAX_WORLD_X / 3, 10 ) # construct enemy base
 
-    self.objects.append( GameManager() )
+    self.objects.append( GameManager( self ) )
 
     # Debug stuff
     '''
     self.bg_objects.append( City( MIN_WORLD_X - 20, 0, 0 ) )
-    self.objects.append( Bomber( Point ( -20, 20, 0 ), DIRECTION_LEFT ) ) # DIRECTION_RIGHT DIRECTION_LEFT
+    self.objects.append( Bomber( Point ( -20, 20, 0 ), DIRECTION_LEFT ) )
     self.objects.append( Transporter( Point ( 0, 20, 0 ), DIRECTION_RIGHT ) )
     self.objects.append( Tank( Point(  10, 0, 0 ), DIRECTION_RIGHT ) )
     self.objects.append( Jeep( Point(  -30, 0, 0 ), DIRECTION_LEFT ) )
@@ -113,10 +147,7 @@ class displayEngine():
     self.objects.append( Transport2( Point(  10, 0, 0 ), DIRECTION_RIGHT ) )
     self.objects.append( Truck( Point(  30, 0, 0 ), DIRECTION_RIGHT ) )
     self.objects.append( dbgPoint( Point(  0, 0, 0 ) ) )
-
     '''
-    self.objects.append( Fighter( Point ( 200, 20, 0 ), DIRECTION_LEFT ) )
-
     # Sort objects by decreasing Z so closer are drawn on top
     def increaseZ( o ):
       return -o.p.z
@@ -135,15 +166,10 @@ class displayEngine():
     self.statusMessages.insert( 0, ( m, time ) ) # list contains (string,time) tuples. Newest to head, pull from end
 
   def gameOver( self ):
-    self.addStatusMessage( "Game Over.", time=200 )
+    self.addStatusMessage( "Game Over.", time=100 )
 
   def update( self ):
     self.time += 1
-
-    if self.time == 50:
-      self.addStatusMessage( "Stage 1" )
-      self.addStatusMessage( "Defend the city" )
-      self.addStatusMessage( "Destroy enemy base ->" )
 
     # Collision detection
     numObjects = len( self.objects )
@@ -180,16 +206,18 @@ class displayEngine():
   def draw( self ):
     self.canvas.delete( ALL )
     for o in self.bg_objects:
-      o.draw( self )
-      if self.debugCoords:
-        proj = projection( self.camera, o.p )
-        e.canvas.create_rectangle( proj.x - 1, proj.y - 1, proj.x + 1, proj.y + 1, outline="red" )
+      p = projection( self.camera, o.p )
+      if p.x < SCREEN_WIDTH + 100 and p.x > -500:
+        o.draw( self, p )
+        if self.debugCoords:
+          e.canvas.create_rectangle( p.x - 1, p.y - 1, p.x + 1, p.y + 1, outline="red" )
     for o in self.objects:
-      o.draw( self )
-      if self.debugCoords:
-        proj = projection( self.camera, o.p )
-        e.canvas.create_rectangle( proj.x - 1, proj.y - 1, proj.x + 1, proj.y + 1, outline="red" )
-        displayColRect( e, o )
+      p = projection( self.camera, o.p )
+      if p.x < SCREEN_WIDTH + 100 and p.x > -500:
+        o.draw( self, p )
+        if self.debugCoords:
+          e.canvas.create_rectangle( p.x - 1, p.y - 1, p.x + 1, p.y + 1, outline="red" )
+          displayColRect( e, o )
 
     if self.statusMsgTime > 0:
       self.statusMsgTime -= 1
@@ -198,7 +226,7 @@ class displayEngine():
                             font=tkFont.Font( family='Helvetica', size=28, weight='bold' ) )
     elif self.statusMessages:
       m = self.statusMessages.pop()
-      self.statusMsgCurrent = m [ 0 ]
+      self.statusMsgCurrent = m[ 0 ]
       self.statusMsgTime = m[ 1 ]
 
     self.root.update()
@@ -235,10 +263,11 @@ e.root.bind( "<Up>",    upHandler )
 e.root.bind( "<Down>",  downHandler )
 e.root.bind( "<Key>",   keyHandler )
 
-e.newGame()
+e.newLevel( 1 )
 
 while True:
-  time.sleep( .01 )
-
   e.update()
+  while e.msgQ:
+    m = e.msgQ.pop()
+    e.processMessage( m[ 0 ], m[ 1 ] )
   e.draw()
