@@ -4,6 +4,7 @@ from utils import *
 from explosions import *
 from Tkinter import *
 from PIL import ImageTk, Image
+from copy import copy
 
 # Jeeps and trucks
 class Jeep():
@@ -81,13 +82,14 @@ class Jeep():
 
     return True
 
-  def draw( self, e, p ):
+  def draw( self, e, p_ ):
     d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
-
-    e.canvas.create_image( proj.x, proj.y - 30, image=Jeep.images[ d ][ self.imgIx ] )
+    p = copy( p_ )
+    p.y -= 20
+    e.canvas.create_image( p.x, p.y, image=Jeep.images[ d ][ self.imgIx ] )
     wheelOffs = [ [ -43, 40 ], [ -38, 43 ] ]
     for xOff in wheelOffs[ d ]:
-      self.drawWheel( e.canvas, proj.x + xOff, proj.y + 14 - 30, 12, self.p.x )
+      self.drawWheel( e.canvas, p.x + xOff, p.y + 14, 12, self.p.x )
 
 ##############################################################################
 class Transport1():
@@ -108,7 +110,7 @@ class Transport1():
       SW = 512
       for x in range( 0, 2 ):
         crop = img.crop( ( x * SW, 0, x * SW + SW, 128 ) )
-        crop = crop.resize( ( 512 / 2, 128 / 2 ) )
+        crop = crop.resize( ( 256, 64 ) )
         crop = ImageTk.PhotoImage( crop )
         Transport1.images.append( crop )
 
@@ -121,8 +123,7 @@ class Transport1():
 
   # Draw wheels with circles instead of using sprites.
   def drawWheel( self, c, x, y, radius, angle ):
-    c.create_oval( x - radius, y - radius,
-                   x + radius, y + radius, fill="#111" )  # outer black / rubber
+    c.create_oval( x - radius, y - radius, x + radius, y + radius, fill="#111" )  # outer black / rubber
     c.create_oval( x - radius * .65, y - radius * .65,
                    x + radius * .65, y + radius * .65, fill="gray" )  # inner silver
     c.create_oval( x - radius * .33, y - radius * .33,
@@ -141,12 +142,10 @@ class Transport1():
     if self.si < 0:
       e.qMessage( MSG_ENEMY_DESTROYED, self )
       return False
-
     if self.p.x < MIN_WORLD_X or self.p.x > MAX_WORLD_X:
       self.v.flipx()
 
     self.p.move( self.v )
-
     return True
 
   def draw( self, e, p ):
@@ -211,7 +210,6 @@ class Transport2():
       self.v.flipx()
 
     self.p.move( self.v )
-
     return True
 
   def draw( self, e, p ):

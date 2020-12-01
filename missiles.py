@@ -6,7 +6,6 @@ from Tkinter import *
 from PIL import ImageTk, Image
 from copy import copy
 
-BULLET_LIFETIME = 100
 
 class Bullet():
   def __init__( self, p, v, oType=OBJECT_TYPE_WEAPON ):
@@ -23,12 +22,11 @@ class Bullet():
       self.time = BULLET_LIFETIME + 1
 
   def update( self, e ):
+    self.time += 1
     if self.time > BULLET_LIFETIME:
       return False
 
-    self.time += 1
     self.p.move( self.v )
-
     if self.p.y < 0.0:
       e.addObject( SmokeA( Point( self.p.x, self.p.y, self.p.z ) ) )
       return False
@@ -100,7 +98,7 @@ class MissileSmall( MissileBase ):
       img = Image.open( "images/chopper/missileB_R.gif" )
       MissileSmall.missileImagesS.append( ImageTk.PhotoImage( img ) )
 
-      for lr in ( "L.gif", "R.gif" ):
+      for lr in( "L.gif", "R.gif" ):
         img = Image.open( "images/chopper/exhaust" + lr )
         img = img.resize( ( 10, 7 ) )
         img = ImageTk.PhotoImage( img )
@@ -134,7 +132,7 @@ class MissileLarge( MissileBase ):
       img = Image.open( "images/chopper/missileA_R.gif" )
       MissileLarge.missileImagesL.append( ImageTk.PhotoImage( img ) )
 
-      for lr in ( "L.gif", "R.gif" ):
+      for lr in( "L.gif", "R.gif" ):
         img = Image.open( "images/chopper/exhaust" + lr )
         img = img.resize( ( 20, 7 ) )
         img = ImageTk.PhotoImage( img )
@@ -160,7 +158,9 @@ class Bomb():
     self.p = Point( p.x, p.y, p.z )
     self.wDamage = WEAPON_DAMAGE_BOMB
     self.colRect = ( -.5, 1, .5, 0 )
-    self.v = v
+    self.v = copy( v )
+    self.active = True
+
     if not Bomb.bombImage:
       bombImage = Image.open( "images/chopper/bomb.gif" )
       bombImage = bombImage.resize( ( 10, 30 ) )
@@ -169,8 +169,12 @@ class Bomb():
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
       e.addObject( BombExplosion( self.p ) )
+      self.active = False
 
   def update( self, e ):
+    if self.active == False:
+      return False
+
     self.v.add( Vector( PI / 2, .05 ) ) # gravity
     self.p.move( self.v )
 

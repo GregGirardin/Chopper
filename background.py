@@ -78,10 +78,29 @@ class MountainImg():
 
     if not MountainImg.image:
       img = Image.open( "images/backgrounds/Mountains1.gif" )
+      img = img.resize( ( 4000, 250 ) )
+
       MountainImg.image = ImageTk.PhotoImage( img )
 
   def draw( self, e, p ):
-    e.canvas.create_image( p.x, p.y - 204, image=MountainImg.image )
+    e.canvas.create_image( p.x, p.y - 100, image=MountainImg.image )
+
+class HillImg():
+  image = None
+
+  def __init__( self, x, y, z ):
+    self.p = Point( x, y, z )
+    self.oType = OBJECT_TYPE_NONE
+
+    if not HillImg.image:
+      img = Image.open( "images/backgrounds/Mountains2.gif" )
+      img = img.resize( ( 4000, 150 ) )
+
+      HillImg.image = ImageTk.PhotoImage( img )
+
+  def draw( self, e, p ):
+    pass
+    e.canvas.create_image( p.x, p.y - 40, image=HillImg.image )
 
 class Cloud():
   image = None
@@ -95,9 +114,9 @@ class Cloud():
       Cloud.image = ImageTk.PhotoImage( img )
 
   def draw( self, e, p ):
-    self.p.x -= 1 # background object so we don't call update..
+    self.p.x -= .5 # This is bad but.. it's background object so we don't call update..
     if self.p.x < MIN_WORLD_X - 1000:
-      self.p.x = MAX_WORLD_X
+      self.p.x = MAX_WORLD_X + 500
 
     e.canvas.create_image( p.x, p.y, image=Cloud.image )
 
@@ -158,8 +177,7 @@ class Tree():
       self.imgIndex = random.randint( 0, 2 ) # two bigger gifs..
 
   def draw( self, e, p ):
-    e.canvas.create_image( p.x, p.y - Tree.offsets[ self.imgIndex ],
-                           image=Tree.images[ self.imgIndex ] )
+    e.canvas.create_image( p.x, p.y - Tree.offsets[ self.imgIndex ], image=Tree.images[ self.imgIndex ] )
 
 class Base():
   image = None
@@ -227,14 +245,14 @@ class CityBuildings():
 
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
-      if param.oType == OBJECT_TYPE_WEAPON:
+      if param.oType == OBJECT_TYPE_E_WEAPON:
         self.health -= param.wDamage
         if self.health < 0:
           e.addObject( Explosion( self.p ) )
 
   def update( self, e ):
     if self.health < 0.0:
-      e.qMessage( MSG_BUILDING_DESTROYED, self )
+      e.qMessage( MSG_BUILDING_DESTROYED )
       return False
     return True
 
@@ -292,13 +310,14 @@ class Building(): # from miscBuildings.gif
   def __init__( self, x, b, label=None ):
     self.oType = OBJECT_TYPE_E_BUILDING
     self.p = Point( x, 0, 3 )
-    self.colRect = ( -Building.imgInfo[ b ][ 3 ] / 20,
+    self.colRect = ( -Building.imgInfo[ b ][ 3 ] / 30,
                       Building.imgInfo[ b ][ 4 ] / 10,
-                      Building.imgInfo[ b ][ 3 ] / 20,
+                      Building.imgInfo[ b ][ 3 ] / 30,
                       0 )
     self.label = label
     self.b = b
     self.si = SI_BUILDING
+    self.points = POINTS_E_BUILDING
 
     if not Building.imgInfo[ 0 ][ 0 ]: # If PhotoImage is None we haven't loaded yet
       img = Image.open( "images/backgrounds/miscBuildings.gif" )

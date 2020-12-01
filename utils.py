@@ -199,14 +199,21 @@ def collisionCheck( e, obj1, obj2 ):
     return False
 
   chopper = True if( obj1.oType == OBJECT_TYPE_CHOPPER or obj2.oType == OBJECT_TYPE_CHOPPER ) else False
-  if chopper and weapon:
+  if chopper and weapon: # Stop shooting yourself
     return False
-  if not chopper and eWeapon:
+
+  if( ( obj1.oType >= OBJECT_TYPE_FIRST_ENEMY and obj1.oType <= OBJECT_TYPE_LAST_ENEMY ) or
+      ( obj1.oType >= OBJECT_TYPE_FIRST_ENEMY and obj1.oType <= OBJECT_TYPE_LAST_ENEMY ) ):
+     enemy = True
+  else:
+     enemy = False
+
+  if enemy and eWeapon: # enemy doesn't shoot itself
     return False
 
   isBuilding = True if( obj1.oType == OBJECT_TYPE_BUILDING or obj2.oType == OBJECT_TYPE_BUILDING ) else False
 
-  if weapon and isBuilding:
+  if weapon and isBuilding: # we don't bomb our own buildings
     return False
 
   return True

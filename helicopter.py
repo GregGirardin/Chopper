@@ -18,6 +18,7 @@ class Helicopter():
     self.loadImages()
     self.vx = 0.0
     self.vy = 0.0
+    self.curXVelocity = TGT_VEL_STOP
     self.tgtXVelocity = TGT_VEL_STOP
     self.tgtYVelocity = TGT_VEL_STOP
     self.chopperDir = DIRECTION_FORWARD
@@ -80,11 +81,11 @@ class Helicopter():
 
   def processMessage( self, e, message, param=None ):
     if message == MSG_ACCEL_L:
-      if self.tgtXVelocity > TGT_VEL_LEFT_FAST:
+      if self.tgtXVelocity > TGT_VEL_LEFT_FAST and self.p.y > 0:
         self.tgtXVelocity -= 1
         self.displayStickCount = DISPLAY_CONTROL_TIME
     elif message == MSG_ACCEL_R:
-      if self.tgtXVelocity < TGT_VEL_RIGHT_FAST:
+      if self.tgtXVelocity < TGT_VEL_RIGHT_FAST and self.p.y > 0:
         self.tgtXVelocity += 1
         self.displayStickCount = DISPLAY_CONTROL_TIME
     elif message == MSG_ACCEL_U:
@@ -171,11 +172,13 @@ class Helicopter():
         self.vx = tv
 
       tv = self.tgtYVelDict[ self.tgtYVelocity ]
-      if self.vy < tv:
+      if tv == TGT_VEL_STOP:
+        self.vy *= .5
+      elif self.vy < tv:
         self.vy += CHOPPER_V_DELTA
       elif self.vy > tv:
         self.vy -= CHOPPER_V_DELTA
-      if math.fabs( self.vy - tv ) < .01: # In case of rounding
+      if math.fabs( self.vy - tv ) <= .01: # In case of rounding
         self.vy = tv
 
     self.p.y += self.vy
@@ -195,8 +198,10 @@ class Helicopter():
       self.tgtYVelocity = TGT_VEL_STOP
     elif self.p.y <= 0: # On the ground.
       self.p.y = 0
-      self.tgtXVelocity = TGT_VEL_STOP
-      self.tgtYVelocity = TGT_VEL_STOP
+      if self.tgtXVelocity > TGT_VEL_STOP:
+        self.tgtXVelocity = TGT_VEL_RIGHT_STOP
+      elif self.tgtXVelocity < TGT_VEL_STOP:
+        self.tgtXVelocity = TGT_VEL_LEFT_STOP
       self.vx = 0
       self.vy = 0
 
@@ -213,7 +218,10 @@ class Helicopter():
               self.countBullet = 250
               self.onGround = True
               self.si = SI_CHOPPER
-              e.addStatusMessage( "Refueled", time=50 )
+              if e.missionComplete:
+                e.qMessage( MSG_MISSION_COMPLETE )
+              else:
+                e.addStatusMessage( "Refueled", time=50 )
               break
     else: # Off the ground
       self.onGround = False
@@ -248,29 +256,29 @@ class Helicopter():
 
     # Determine sprite and the corresponding rotor positions
     bodyAngle = ANGLE_0
-    self.chopperDir = DIRECTION_FORWARD
-    targetVelocity = self.tgtXVelDict[ self.tgtXVelocity ]
+    #self.chopperDir = DIRECTION_FORWARD
+    targVel = self.tgtXVelDict[ self.tgtXVelocity ]
 
     if self.p.y != 0: # We're not on the ground
-      if targetVelocity > 0.0: # Want to go right (+x dir)
+      if targVel > 0.0: # Want to go right (+x dir)
         self.chopperDir = DIRECTION_RIGHT
         if self.vx < 0.0: # but still going left, angle left but 'up' to slow down before turning.
           self.chopperDir = DIRECTION_LEFT
           bodyAngle = ANGLE_U5
-        elif self.vx < targetVelocity:
+        elif self.vx < targVel:
           bodyAngle = ANGLE_D10
         elif self.vx > 0:
           bodyAngle = ANGLE_D5
-      elif targetVelocity < 0.0:
+      elif targVel < 0.0:
         self.chopperDir = DIRECTION_LEFT
         if self.vx > 0: # but still going right, go 'up' to slow down before turning.
           bodyAngle = ANGLE_U5
           self.chopperDir = DIRECTION_RIGHT
-        elif self.vx > targetVelocity:
+        elif self.vx > targVel:
           bodyAngle = ANGLE_D10
         elif self.vx < 0:
           bodyAngle = ANGLE_D5
-      else: # targetVelocity == 0
+      else: # targVel == 0
         if self.vx != 0:
           self.chopperDir = DIRECTION_LEFT if self.vx < 0 else DIRECTION_RIGHT
           bodyAngle = ANGLE_0

@@ -14,8 +14,6 @@ from planes import *
 from enemyAI import *
 import random
 
-chopper = None
-
 class displayEngine():
   def __init__( self ):
     self.root = Tk()
@@ -24,21 +22,26 @@ class displayEngine():
     self.canvas.pack()
 
     self.camera = Point( 0, 15, CAM_Z )
-    self.currentCamOff = 0 # Start from the left initially to show the City
-    self.debugCoords = False # True # debug. Show x,y and collision box
+    self.currentCamOff = -20 # Start from the left initially to show the City
+    self.debugCoords = True # debug. Show x,y and collision box
     self.chopper = None
-    self.citySI = 100.0
     self.level = 1
+    self.score = 0
+    self.highScore = 0
     self.statusMessages = []
     self.statusMsgTime = 0
+    self.statusMsgCurrent = None
     self.msgQ = []
 
-  # this is called from objects probably in the context of update()
-  # take actions later in processMessage() after all update()s have been called.
-  def qMessage( self, m, param ):
+  # This is called from objects probably in the context of update()
+  # Take actions later in processMessage() after all update()s have been called.
+  def qMessage( self, m, param=None ):
     self.msgQ.append( ( m, param ) )
 
-  def processMessage( self, m, param ):
+  def __processMessage__( self, m, param ):
+
+    if m == MSG_UI: # currently all UI messages are for the chopper.
+      self.chopper.processMessage( self, param )
 
     if m == MSG_BUILDING_DESTROYED:
       anyBuildings = False
@@ -52,36 +55,61 @@ class displayEngine():
         self.addStatusMessage( "City has been bombed." )
 
     elif m == MSG_E_BUILDING_DESTROYED:
+      self.addToScore( param.points )
       anyBuildings = False
       for o in self.objects:
         if o.oType == OBJECT_TYPE_E_BUILDING:
           anyBuildings = True
           break
       if not anyBuildings:
-        self.addStatusMessage( "Enemy base has been destroyed." )
+        self.enemyBaseDestroyed = True
+        self.addStatusMessage( "Enemy base destroyed." )
 
-      elif m == MSG_ENEMY_DESTROYED:
-        # see if it's the last one.
-        self.score += param.points
-        anyEnemies = False
-        for o in self.objects:
-          if o.oType >= OBJECT_TYPE_FIRST_ENEMY and o.oType <= OBJECT_TYPE_LAST_ENEMY:
-            anyEnemies = True
-            break
-        if not anyEnemies:
-          self.addStatusMessage( "All enemies destroyed" )
+    elif m == MSG_ENEMY_DESTROYED:
+      # see if it's the last one.
+      self.addToScore( param.points )
+      anyEnemies = False
+      for o in self.objects:
+        if o.oType >= OBJECT_TYPE_FIRST_ENEMY and o.oType <= OBJECT_TYPE_LAST_ENEMY:
+          anyEnemies = True
+          break
+      if not anyEnemies and self.spawningComplete:
+        self.allEnemiesDestroyed = True
+        self.addStatusMessage( "All enemies destroyed." )
 
-      elif m == MSG_CHOPPER_DESTROYED:
-        self.addStatusMessage( "Chopper Destroyed!" )
+    elif m == MSG_CHOPPER_DESTROYED:
+      self.addStatusMessage( "Game Over!" )
 
-  def newLevel( self, level ):
-    global chopper
+    elif m == MSG_SPAWNING_COMPLETE:
+      self.spawningComplete = True
 
-    self.statusMessages = [ ]
-    self.statusMsgTime = None
-    self.statusMsgCurrent = None
+    if self.allEnemiesDestroyed and self.enemyBaseDestroyed and not self.missionComplete:
+      self.missionComplete = True
+      self.addStatusMessage( "Return to base." )
 
-    self.level = level
+    elif m == MSG_MISSION_COMPLETE:
+      self.addStatusMessage( "Level complete." )
+      bonus = 0
+      for o in self.objects:
+        if o.oType == OBJECT_TYPE_BUILDING:
+          bonus += POINTS_BUILDING
+      if bonus:
+        self.addStatusMessage( "City bonus %s" % bonus )
+        self.addToScore( bonus )
+
+      self.level += 1
+      self.newLevel()
+
+  def addToScore( self, points ):
+    self.score += points
+    if self.score > self.highScore:
+      self.highScore = self.score
+
+  def newLevel( self ):
+    self.enemyBaseDestroyed = False
+    self.spawningComplete = False
+    self.allEnemiesDestroyed = False
+    self.missionComplete = False # Just need to return to base to finish level.
     self.levelComplete = False
     self.time = 0
     self.bg_objects = [] # Background objects that don't interact with anything.. no collisions or update
@@ -94,12 +122,14 @@ class displayEngine():
 
     # Mountain range
     self.bg_objects.append( MountainImg( 200, 0, HORIZON_DISTANCE / 2 ) )
+    self.bg_objects.append( HillImg( 200, 0, HORIZON_DISTANCE / 4 ) )
 
     # Clouds
-    for z in range( 1, 10 ):
+    for z in range( 1, 8 ):
       self.bg_objects.append( Cloud( random.randint( MIN_WORLD_X, MAX_WORLD_X ),
-                                     random.randint( 150, 250 ),
-                                     random.randint( 500, 2000 ) ) ) # in front of the mountains
+                                     random.randint( 150, 225 ),
+                                     random.randint( HORIZON_DISTANCE / 20,
+                                                     HORIZON_DISTANCE / 4 ) ) ) # in front of the mountains
     # Rocks
     '''
     for z in range( -5, 9, 1 ): # Z is behind projection plane but the math works.
@@ -123,31 +153,17 @@ class displayEngine():
     # Base
     self.bg_objects.append( Base( 0, 0, 2, label="Base" ) )
 
-    # Active objects. (we call update() and check for collisions)
+    # Active objects. We call update() and check for collisions
 
     # Create the Chopper
-    chopper = Helicopter( 0, 0, 1 )
-    self.objects.append( chopper )
-    self.chopper = chopper
+    self.chopper = Helicopter( 0, 0, 1 )
+    self.objects.append( self.chopper )
 
-    buildCity( self, MIN_WORLD_X - 10, 10 )
-    buildBase( self, MAX_WORLD_X / 3, 10 ) # construct enemy base
+    buildCity( self, MIN_WORLD_X - 10, NUM_CITY_BUILDINGS )
+    buildBase( self, MAX_WORLD_X / 3, NUM_E_BASE_BUILDINGS )
 
     self.objects.append( GameManager( self ) )
 
-    # Debug stuff
-    '''
-    self.bg_objects.append( City( MIN_WORLD_X - 20, 0, 0 ) )
-    self.objects.append( Bomber( Point ( -20, 20, 0 ), DIRECTION_LEFT ) )
-    self.objects.append( Transporter( Point ( 0, 20, 0 ), DIRECTION_RIGHT ) )
-    self.objects.append( Tank( Point(  10, 0, 0 ), DIRECTION_RIGHT ) )
-    self.objects.append( Jeep( Point(  -30, 0, 0 ), DIRECTION_LEFT ) )
-    self.objects.append( Jeep( Point(  -20, 0, 0 ), DIRECTION_RIGHT ) )
-    self.objects.append( Transport1( Point(  -10, 0, 0 ), DIRECTION_RIGHT ) )
-    self.objects.append( Transport2( Point(  10, 0, 0 ), DIRECTION_RIGHT ) )
-    self.objects.append( Truck( Point(  30, 0, 0 ), DIRECTION_RIGHT ) )
-    self.objects.append( dbgPoint( Point(  0, 0, 0 ) ) )
-    '''
     # Sort objects by decreasing Z so closer are drawn on top
     def increaseZ( o ):
       return -o.p.z
@@ -161,7 +177,7 @@ class displayEngine():
     self.objects.append( object )
     self.objects.sort( key=increaseZ )
 
-  # Q's a status message to be displayed at the center of the screen. time is display cycles.
+  # Q's a status message to be displayed at the center of the screen.
   def addStatusMessage( self, m, time=50 ):
     self.statusMessages.insert( 0, ( m, time ) ) # list contains (string,time) tuples. Newest to head, pull from end
 
@@ -188,32 +204,36 @@ class displayEngine():
 
     # Move the camera. Determine where we want it relative to the chopper
     # If chopper is facing left, we want the camera on the right side of the screen.
-    tgtCamOff = [ -30, 30, 0 ][ chopper.chopperDir ]
+    tgtCamOff = [ -30, 30, 0 ][ self.chopper.chopperDir ]
 
     if self.currentCamOff < tgtCamOff:
       self.currentCamOff += .5
     elif self.currentCamOff > tgtCamOff:
       self.currentCamOff -= .5
 
-    self.camera.x = chopper.p.x + self.currentCamOff
+    self.camera.x = self.chopper.p.x + self.currentCamOff
     if self.camera.x < MIN_WORLD_X:
       self.camera.x = MIN_WORLD_X
     elif self.camera.x > MAX_WORLD_X:
       self.camera.x = MAX_WORLD_X
 
-    self.camera.y = ( chopper.p.y - 20 ) if chopper.p.y > 40 else 20
+    self.camera.y = ( self.chopper.p.y - 20 ) if self.chopper.p.y > 40 else 20
+
+    while self.msgQ:
+      m = self.msgQ.pop()
+      self.__processMessage__( m[ 0 ], m[ 1 ] )
 
   def draw( self ):
     self.canvas.delete( ALL )
     for o in self.bg_objects:
       p = projection( self.camera, o.p )
-      if p.x < SCREEN_WIDTH + 100 and p.x > -500:
+      if p.x < SCREEN_WIDTH + 500 and p.x > -500:
         o.draw( self, p )
         if self.debugCoords:
           e.canvas.create_rectangle( p.x - 1, p.y - 1, p.x + 1, p.y + 1, outline="red" )
     for o in self.objects:
       p = projection( self.camera, o.p )
-      if p.x < SCREEN_WIDTH + 100 and p.x > -500:
+      if p.x < SCREEN_WIDTH + 500 and p.x > -500:
         o.draw( self, p )
         if self.debugCoords:
           e.canvas.create_rectangle( p.x - 1, p.y - 1, p.x + 1, p.y + 1, outline="red" )
@@ -229,30 +249,33 @@ class displayEngine():
       self.statusMsgCurrent = m[ 0 ]
       self.statusMsgTime = m[ 1 ]
 
+    t = "%s" % self.score
+    e.canvas.create_text( SCREEN_WIDTH / 2, 10, text=t )
+
     self.root.update()
 
 def leftHandler( event ):
-  chopper.processMessage( e, MSG_ACCEL_L )
+  e.qMessage( MSG_UI, MSG_ACCEL_L )
 def rightHandler( event ):
-  chopper.processMessage( e, MSG_ACCEL_R )
+  e.qMessage( MSG_UI, MSG_ACCEL_R )
 def upHandler( event ):
-  chopper.processMessage( e, MSG_ACCEL_U )
+  e.qMessage( MSG_UI, MSG_ACCEL_U )
 def downHandler( event ):
-  chopper.processMessage( e, MSG_ACCEL_D )
+  e.qMessage( MSG_UI, MSG_ACCEL_D )
 
 def keyHandler( event ):
   if event.char == "a":
-    chopper.processMessage( e, MSG_WEAPON_MISSILE_S )
+    e.qMessage( MSG_UI, MSG_WEAPON_MISSILE_S )
   elif event.char == "s":
-    chopper.processMessage( e, MSG_WEAPON_MISSILE_L )
+    e.qMessage( MSG_UI, MSG_WEAPON_MISSILE_L )
   elif event.char == "z":
-    chopper.processMessage( e, MSG_WEAPON_BOMB )
+    e.qMessage( MSG_UI, MSG_WEAPON_BOMB )
   elif event.char == "e":
-    chopper.processMessage( e, MSG_GUN_UP )
+    e.qMessage( MSG_UI, MSG_GUN_UP )
   elif event.char == "d":
-    chopper.processMessage( e, MSG_GUN_DOWN )
+    e.qMessage( MSG_UI, MSG_GUN_DOWN )
   elif event.char == " ":
-    chopper.processMessage( e, MSG_WEAPON_BULLET )
+    e.qMessage( MSG_UI, MSG_WEAPON_BULLET )
 
 # Main
 e = displayEngine()
@@ -263,11 +286,9 @@ e.root.bind( "<Up>",    upHandler )
 e.root.bind( "<Down>",  downHandler )
 e.root.bind( "<Key>",   keyHandler )
 
-e.newLevel( 1 )
+e.newLevel( )
 
 while True:
   e.update()
-  while e.msgQ:
-    m = e.msgQ.pop()
-    e.processMessage( m[ 0 ], m[ 1 ] )
+
   e.draw()

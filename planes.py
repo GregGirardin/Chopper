@@ -15,10 +15,11 @@ class Bomber():
     self.p = Point( p.x, p.y, p.z )
     self.colRect = ( -6, 2, 6, 0 )
     self.time = 0
-    self.v = v if v else Vector( PI, BOMBER_DELTA )
+    self.v = copy( v ) if v else Vector( PI, BOMBER_DELTA )
     self.si = SI_BOMBER
     self.points = POINTS_BOMBER
-
+    self.bombs = 1
+    self.target_y = p.y
     if len( Bomber.images ) == 0:
       img = Image.open( "images/vehicles/Jet1.png" )
       SW = 512
@@ -39,26 +40,41 @@ class Bomber():
     if self.si < 0.0:
       e.qMessage( MSG_ENEMY_DESTROYED, self )
       return False
+
     self.time += 1
 
+    if math.fabs( self.p.y - self.target_y ) > .2:
+      if self.p.y < self.target_y:
+        self.p.y += .1
+      elif self.p.y > self.target_y:
+        self.p.y -= .1
+
     if self.p.x < MIN_WORLD_X - 50:
-      self.p.y = random.randint( 20, 25 )
+      self.p.y = random.randint( 50, 100 )
       self.v.flipx()
     elif self.p.x > MAX_WORLD_X:
-      self.p.y = random.randint( 10, 15 )
+      self.p.y = random.randint( 10, 25 )
       self.v.flipx()
+      self.bombs = 1
+
+    if self.bombs:  # See if there's a target
+      for o in e.objects:
+        if o.oType == OBJECT_TYPE_BUILDING:
+          if( math.fabs( o.p.x - self.p.x ) < 5 ):
+            e.addObject( Bomb( self.p, self.v, oType=OBJECT_TYPE_E_WEAPON ) )
+            self.bombs -= 1
+            break
 
     self.p.move( self.v )
 
     return True
 
   def draw( self, e, p ):
-    projShadow = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
+    ps = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
 
     d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
-
     e.canvas.create_image( p.x, p.y - 20, image=Bomber.images[ d ] )
-    e.canvas.create_rectangle( p.x - 60, projShadow.y, p.x + 60, projShadow.y, outline="black" )
+    e.canvas.create_rectangle( p.x - 60, ps.y, p.x + 60, ps.y, outline="black" )
 
 ##############################################################################
 class Bomber2():
@@ -105,11 +121,11 @@ class Bomber2():
     return True
 
   def draw( self, e, p ):
-    projShadow = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
+    ps = projection( e.camera, Point( self.p.x, 0, self.p.z ) ) # Shadow
     d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
 
     e.canvas.create_image( p.x, p.y - 40, image=Bomber2.images[ d ] )
-    e.canvas.create_rectangle( p.x - 60, projShadow.y, p.x + 60, projShadow.y, outline="black" )
+    e.canvas.create_rectangle( p.x - 60, ps.y, p.x + 60, ps.y, outline="black" )
 
 ##############################################################################
 class Fighter():
@@ -166,8 +182,8 @@ class Fighter():
     return True
 
   def draw( self, e, p ):
-    projShadow = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
+    ps = projection( e.camera, Point( self.p.x, 0, self.p.z ) )
 
     d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
     e.canvas.create_image( p.x, p.y - 25, image=Fighter.images[ d ] )
-    e.canvas.create_rectangle( p.x - 60, projShadow.y, p.x + 60, projShadow.y, outline="black" )
+    e.canvas.create_rectangle( p.x - 60, ps.y, p.x + 60, ps.y, outline="black" )
