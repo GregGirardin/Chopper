@@ -13,13 +13,14 @@ class Jeep():
   def __init__( self, p, v=None ):
     self.oType = OBJECT_TYPE_JEEP
     self.p = Point( p.x, p.y, p.z )
-    self.colRect = ( -3, 3, 3, 1 )
+    self.colRect = ( -3, 3, 3, 0 )
     self.time = 0
     self.imgIx = 0
     self.bounceCount = 0
     self.v = v if v else Vector( PI, JEEP_DELTA )
     self.si = SI_JEEP
     self.points = POINTS_JEEP
+    self.showSICount = 0
 
     if len( Jeep.images ) == 0:
       img = Image.open( "images/vehicles/Jeep.png" )
@@ -35,6 +36,7 @@ class Jeep():
 
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
+      self.showSICount = SHOW_SI_COUNT
       if param.oType == OBJECT_TYPE_WEAPON:
         self.si -= param.wDamage
         if self.si < 0:
@@ -58,7 +60,7 @@ class Jeep():
 
   def update( self, e ):
     if self.si < 0:
-      e.qMessage( MSG_ENEMY_DESTROYED, self )
+      e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
       return False
 
     if not self.bounceCount:
@@ -89,7 +91,13 @@ class Jeep():
     e.canvas.create_image( p.x, p.y, image=Jeep.images[ d ][ self.imgIx ] )
     wheelOffs = [ [ -43, 40 ], [ -38, 43 ] ]
     for xOff in wheelOffs[ d ]:
+      # using our self.p.x as angle in drawWheel() keeps wheel spinning
+      # as though it's on the ground.
       self.drawWheel( e.canvas, p.x + xOff, p.y + 14, 12, self.p.x )
+    if self.showSICount > 0:
+      self.showSICount -= 1
+      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x + 30, p.y - 28, fill="red" )
+      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x - 30 + 60.0 * self.si / SI_JEEP, p.y - 28, fill="green" )
 
 ##############################################################################
 class Transport1():
@@ -98,12 +106,13 @@ class Transport1():
   def __init__( self, p, v=None ):
     self.oType = OBJECT_TYPE_TRANSPORT1
     self.p = Point( p.x, p.y, p.z )
-    self.colRect = ( -5, 1, 5, -1 )
+    self.colRect = ( -5, 3, 5, 0 )
     self.time = 0
     self.bounceCount = 0
     self.v = v if v else Vector( PI, TRANSPORT1_DELTA )
     self.si = SI_TRANSPORT1
     self.points = POINTS_TRANSPORT
+    self.showSICount = 0
 
     if len( Transport1.images ) == 0:
       img = Image.open( "images/vehicles/transport1.gif" )
@@ -116,6 +125,8 @@ class Transport1():
 
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
+      self.showSICount = SHOW_SI_COUNT
+
       if param.oType == OBJECT_TYPE_WEAPON:
         self.si -= param.wDamage
         if self.si < 0:
@@ -140,7 +151,7 @@ class Transport1():
 
   def update( self, e ):
     if self.si < 0:
-      e.qMessage( MSG_ENEMY_DESTROYED, self )
+      e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
       return False
     if self.p.x < MIN_WORLD_X or self.p.x > MAX_WORLD_X:
       self.v.flipx()
@@ -148,14 +159,19 @@ class Transport1():
     self.p.move( self.v )
     return True
 
-  def draw( self, e, p ):
+  def draw( self, e, p_ ):
     d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
-
+    p = copy( p_ )
+    p.y -= 30
     e.canvas.create_image( p.x, p.y, image=Transport1.images[ d ] )
 
     wheelOffs = [ [ -65, -25, 25, 60 ], [ -65, -25, 25, 65 ] ]
     for xOff in wheelOffs[ d ]:
-      self.drawWheel( e.canvas, proj.x + xOff, proj.y + 18, 15, self.p.x )
+      self.drawWheel( e.canvas, p.x + xOff, p.y + 18, 15, self.p.x )
+    if self.showSICount > 0:
+      self.showSICount -= 1
+      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x + 30, p.y - 28, fill="red" )
+      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x - 30 + 60.0 * self.si / SI_TRANSPORT1, p.y - 28, fill="green" )
 
 ##############################################################################
 class Transport2():
@@ -164,12 +180,13 @@ class Transport2():
   def __init__( self, p, v=None ):
     self.oType = OBJECT_TYPE_TRANSPORT2
     self.p = Point( p.x, p.y, p.z )
-    self.colRect = ( -2, 1, 2, 0 )
+    self.colRect = ( -5, 3, 5, 0 )
     self.time = 0
     self.bounceCount = 0
     self.v = v if v else Vector( PI, TRANSPORT2_DELTA )
     self.si = SI_TRANSPORT2
     self.points = POINTS_TRANSPORT
+    self.showSICount = 0
 
     if len( Transport2.images ) == 0:
       img = Image.open( "images/vehicles/transport2.gif" )
@@ -182,6 +199,8 @@ class Transport2():
 
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
+      self.showSICount = SHOW_SI_COUNT
+
       if param.oType == OBJECT_TYPE_WEAPON:
         self.si -= param.wDamage
         if self.si < 0:
@@ -203,22 +222,28 @@ class Transport2():
 
   def update( self, e ):
     if self.si < 0:
-      e.qMessage( MSG_ENEMY_DESTROYED, self )
+      e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
       return False
 
     if self.p.x < MIN_WORLD_X or self.p.x > MAX_WORLD_X:
       self.v.flipx()
-
     self.p.move( self.v )
+
     return True
 
-  def draw( self, e, p ):
+  def draw( self, e, p_ ):
     d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
-
-    e.canvas.create_image( proj.x, proj.y, image=Transport2.images[ d ] )
+    p = copy( p_ )
+    p.y -= 35
+    e.canvas.create_image( p.x, p.y, image=Transport2.images[ d ] )
     wheelOffs = [ [ -64, -25, 25, 64 ], [ -65, -27, 23, 62 ] ]
     for xOff in wheelOffs[ d ]:
-      self.drawWheel( e.canvas, proj.x + xOff, proj.y + 25, 15, self.p.x )
+      self.drawWheel( e.canvas, p.x + xOff, p.y + 25, 15, self.p.x)
+
+    if self.showSICount > 0:
+      self.showSICount -= 1
+      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x + 30, p.y - 28, fill="red" )
+      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x - 30 + 60.0 * self.si / SI_TRANSPORT2, p.y - 28, fill="green" )
 
 ##############################################################################
 class Truck():
@@ -227,12 +252,13 @@ class Truck():
   def __init__( self, p, v=None ):
     self.oType = OBJECT_TYPE_TRUCK
     self.p = Point( p.x, p.y, p.z )
-    self.colRect = ( -2, 1, 2, 0 )
+    self.colRect = ( -3, 2.5, 3, 0 )
     self.time = 0
     self.bounceCount = 0
     self.v = v if v else Vector( PI, TRUCK_DELTA )
     self.si = SI_TRUCK
     self.points = POINTS_TRUCK
+    self.showSICount = 0
 
     if len( Truck.images ) == 0:
       img = Image.open( "images/vehicles/Truck1.gif" )
@@ -245,11 +271,12 @@ class Truck():
 
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
+      self.showSICount = SHOW_SI_COUNT
+
       if param.oType == OBJECT_TYPE_WEAPON:
         self.si -= param.wDamage
         if self.si < 0:
           e.addObject( BombExplosion( self.p ) )
-
   # Draw wheels with circles instead of using sprites.
   def drawWheel( self, c, x, y, radius, angle ):
     c.create_oval( x - radius, y - radius, x + radius, y + radius, fill="#111" )
@@ -267,7 +294,7 @@ class Truck():
 
   def update( self, e ):
     if self.si < 0:
-      e.qMessage( MSG_ENEMY_DESTROYED, self )
+      e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
       return False
 
     if self.p.x < MIN_WORLD_X or self.p.x > MAX_WORLD_X:
@@ -276,10 +303,16 @@ class Truck():
 
     return True
 
-  def draw( self, e, p ):
+  def draw( self, e, p_ ):
     d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
-    e.canvas.create_image( proj.x, proj.y, image=Truck.images[ d ] )
-
+    p = copy( p_ )
+    p.y -= 20
+    e.canvas.create_image( p.x, p.y, image=Truck.images[ d ] )
     wheelOffs = [ [ -58, 20, 50 ], [ -52, -20, 57 ] ]
     for xOff in wheelOffs[ d ]:
-      self.drawWheel( e.canvas, proj.x + xOff, proj.y + 17, 12, self.p.x )
+      self.drawWheel( e.canvas, p.x + xOff, p.y + 17, 12, self.p.x )
+
+    if self.showSICount > 0:
+      self.showSICount -= 1
+      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x + 30, p.y - 28, fill="red" )
+      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x - 30 + 60.0 * self.si / SI_TRUCK, p.y - 28, fill="green" )

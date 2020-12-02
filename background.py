@@ -6,15 +6,26 @@ from PIL import ImageTk, Image
 from explosions import *
 
 class SkyGround():
+  image = None
+
   def  __init__( self ):
     self.p = Point( 0, 0, HORIZON_DISTANCE )
     self.oType = OBJECT_TYPE_NONE
 
+    if not SkyGround.image:
+      img = Image.open( "images/backgrounds/cloud2.png" )
+      img = img.resize( ( 2000, 500 ) )
+
+      SkyGround.image = ImageTk.PhotoImage( img )
+
   def draw( self, e, p ):
     hProj = projection( e.camera, self.p )
     # sky
-    p = [ 0, 0, SCREEN_WIDTH, 0, SCREEN_WIDTH, hProj.y, 0, hProj.y ]
-    e.canvas.create_polygon( p, fill="lightblue", outline="black" )
+    e.canvas.create_image( p.x + 200, p.y - 280, image=SkyGround.image )
+
+    # p = [ 0, 0, SCREEN_WIDTH, 0, SCREEN_WIDTH, hProj.y, 0, hProj.y ]
+    # e.canvas.create_polygon( p, fill="lightblue", outline="black" )
+
     # ground
     p = [ 0, hProj.y, SCREEN_WIDTH, hProj.y, SCREEN_WIDTH, SCREEN_HEIGHT, 0, SCREEN_HEIGHT ]
     e.canvas.create_polygon( p, fill="darkgreen", outline="black" )
@@ -78,7 +89,7 @@ class MountainImg():
 
     if not MountainImg.image:
       img = Image.open( "images/backgrounds/Mountains1.gif" )
-      img = img.resize( ( 4000, 250 ) )
+      img = img.resize( ( 3000, 250 ) )
 
       MountainImg.image = ImageTk.PhotoImage( img )
 
@@ -186,14 +197,32 @@ class Base():
     self.p = Point( x, y, z )
     self.label = label
     self.oType = OBJECT_TYPE_BASE
-    self.visited = False # Have we landed here? May use to indicate game progress.
+    self.readyToRefuel = True
+    self.refuelDelay = 0
 
     if not Base.image:
       img = Image.open( "images/backgrounds/base.gif" )
       img = img.resize( ( 600, 300 ) )
       Base.image = ImageTk.PhotoImage( img )
 
+  def processMessage( self, e, message, param=None ):
+    if message == MSG_REFUELING_AT_BASE:
+      self.refuelDelay = 500
+      self.readyToRefuel = False
+
+  def update( self, e ):
+    assert False
+
   def draw( self, e, p ):
+
+    # tbd, move to Base objects[] and this to update()
+    if not self.readyToRefuel:
+      if self.refuelDelay == 0:
+        self.readyToRefuel = True
+        e.addStatusMessage( "Base Ready To Refuel" )
+      else:
+        self.refuelDelay -= 1
+
     proj = projection( e.camera, self.p )
     e.canvas.create_image( proj.x - 30, proj.y - 50, image=Base.image )
     e.canvas.create_text( proj.x - 50, proj.y + 50, text=self.label, fill='black' )
@@ -318,6 +347,7 @@ class Building(): # from miscBuildings.gif
     self.b = b
     self.si = SI_BUILDING
     self.points = POINTS_E_BUILDING
+    self.showSICount = 0
 
     if not Building.imgInfo[ 0 ][ 0 ]: # If PhotoImage is None we haven't loaded yet
       img = Image.open( "images/backgrounds/miscBuildings.gif" )
@@ -333,6 +363,7 @@ class Building(): # from miscBuildings.gif
 
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
+      self.showSICount = SHOW_SI_COUNT
       if param.oType == OBJECT_TYPE_WEAPON:
         self.si -= param.wDamage
         if self.si < 0:
@@ -346,9 +377,18 @@ class Building(): # from miscBuildings.gif
 
   def draw( self, e, p ):
     sb = Building.imgInfo[ self.b ] # Sprite info shortcut.
-    e.canvas.create_image( p.x, p.y - sb[ 4 ], image=sb[ 0 ] )
-    if self.label:
-      e.canvas.create_text( p.x, p.y + 30, text=self.label, fill='black' )
+    p.y -= sb[ 4 ]
+    e.canvas.create_image( p.x, p.y, image=sb[ 0 ] )
+
+    if self.showSICount > 0:
+      self.showSICount -= 1
+      e.canvas.create_rectangle( p.x - 20, p.y + 5,
+                                 p.x + 20, p.y + 7, fill="red" )
+      e.canvas.create_rectangle( p.x - 20, p.y + 5,
+                                 p.x - 20 + 40.0 * self.si / SI_BUILDING, p.y + 7, fill="green" )
+    elif self.label:
+      e.canvas.create_text( p.x, p.y - 10, text=self.label, fill='black' )
+
 
 def buildBase( e, x, bCount, label=None ):
   assert( bCount >= 2 and bCount < Building.numBuildings )
@@ -357,3 +397,5 @@ def buildBase( e, x, bCount, label=None ):
     ix = random.randint( 0, Building.numBuildings - 1 )
     e.objects.append( Building( x, ix, label=label ) )
     x += Building.imgInfo[ ix ][ 3 ] / 10 # adjust pixels to world coors.
+
+

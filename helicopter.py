@@ -28,7 +28,7 @@ class Helicopter():
     self.countLargeMissiles = 4
     self.countSmallMissiles = 20
     self.countBomb = 4
-    self.countBullet = 250
+    self.countBullet = 100
 
     self.displayStickCount = 0
     self.gunAngle = 0
@@ -124,7 +124,9 @@ class Helicopter():
       if self.gunPosition < 4:
         self.gunPosition += 1
         self.gunAngle = self.gunAngleFromPosition[ self.gunPosition ]
-    elif message == MSG_COLLISION_DET:
+    elif message == MSG_COLLISION_DET and e.cameraOnHelo:
+      # Note that we ignore collisions after we spawn a helo but before the camera
+      # has moved to the helo, otherwise we could get destroyed again before we see the helo
       if param.oType == OBJECT_TYPE_E_WEAPON:
         self.si -= param.wDamage
 
@@ -210,19 +212,24 @@ class Helicopter():
           # See if we're near a base
           if obj.oType == OBJECT_TYPE_BASE:
             if math.fabs( self.p.x - obj.p.x ) < 10.0:
-              obj.visited = True
-              self.fuel = 100.0
-              self.countLargeMissiles = 4
-              self.countSmallMissiles = 20
-              self.countBomb = 4
-              self.countBullet = 250
               self.onGround = True
-              self.si = SI_CHOPPER
-              if e.missionComplete:
-                e.qMessage( MSG_MISSION_COMPLETE )
+              if obj.readyToRefuel:
+                obj.processMessage( e, MSG_REFUELING_AT_BASE )
+                self.fuel = 100.0
+                self.countLargeMissiles = 4
+                self.countSmallMissiles = 20
+                self.countBomb = 4
+                self.countBullet = 250
+                if self.si < SI_CHOPPER * .66:
+                  self.si += SI_CHOPPER / 3
+                if e.missionComplete:
+                  e.qMessage( MSG_MISSION_COMPLETE )
+                else:
+                  e.addStatusMessage( "Refueled", time=50 )
               else:
-                e.addStatusMessage( "Refueled", time=50 )
+                e.addStatusMessage( "Base Not Ready" )
               break
+
     else: # Off the ground
       self.onGround = False
 

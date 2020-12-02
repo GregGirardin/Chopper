@@ -20,6 +20,7 @@ class Bomber():
     self.points = POINTS_BOMBER
     self.bombs = 1
     self.target_y = p.y
+    self.showSICount = 0
     if len( Bomber.images ) == 0:
       img = Image.open( "images/vehicles/Jet1.png" )
       SW = 512
@@ -32,13 +33,14 @@ class Bomber():
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
       if param.oType == OBJECT_TYPE_WEAPON:
+        self.showSICount = SHOW_SI_COUNT
         self.si -= param.wDamage
         if self.si < 0:
           e.addObject( Explosion( self.p ) )
 
   def update( self, e ):
     if self.si < 0.0:
-      e.qMessage( MSG_ENEMY_DESTROYED, self )
+      e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
       return False
 
     self.time += 1
@@ -53,6 +55,9 @@ class Bomber():
       self.p.y = random.randint( 50, 100 )
       self.v.flipx()
     elif self.p.x > MAX_WORLD_X:
+      if e.cityDestroyed:
+        e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
+        return False
       self.p.y = random.randint( 10, 25 )
       self.v.flipx()
       self.bombs = 1
@@ -76,6 +81,11 @@ class Bomber():
     e.canvas.create_image( p.x, p.y - 20, image=Bomber.images[ d ] )
     e.canvas.create_rectangle( p.x - 60, ps.y, p.x + 60, ps.y, outline="black" )
 
+    if self.showSICount > 0:
+      self.showSICount -= 1
+      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x + 30, p.y - 28, fill="red" )
+      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x - 30 + 60.0 * self.si / SI_BOMBER, p.y - 28, fill="green" )
+
 ##############################################################################
 class Bomber2():
   images = []
@@ -88,6 +98,7 @@ class Bomber2():
     self.v = v if v else Vector( PI, BOMBER_DELTA )
     self.si = SI_BOMBER2
     self.points = POINTS_BOMBER
+    self.showSICount = 0
 
     if len( Bomber2.images ) == 0:
       img = Image.open( "images/vehicles/Jet2.gif" )
@@ -101,20 +112,26 @@ class Bomber2():
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
       if param.oType == OBJECT_TYPE_WEAPON:
+        self.showSICount = SHOW_SI_COUNT
         self.si -= param.wDamage
         if self.si < 0:
           e.addObject( Explosion( self.p ) )
 
   def update( self, e ):
     if self.si < 0.0:
-      e.qMessage( MSG_ENEMY_DESTROYED, self )
+      e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
       return False
     self.time += 1
 
     if self.p.x < MIN_WORLD_X - 50:
-      self.v.flipx()  # change direction
+      self.p.y = random.randint( 50, 100 )
+      self.v.flipx()
     elif self.p.x > MAX_WORLD_X:
-      self.v.flipx()  # change direction
+      if e.cityDestroyed:
+        return False
+      self.p.y = random.randint( 10, 25 )
+      self.v.flipx()
+      self.bombs = 1
 
     self.p.move( self.v )
 
@@ -127,6 +144,11 @@ class Bomber2():
     e.canvas.create_image( p.x, p.y - 40, image=Bomber2.images[ d ] )
     e.canvas.create_rectangle( p.x - 60, ps.y, p.x + 60, ps.y, outline="black" )
 
+    if self.showSICount > 0:
+      self.showSICount -= 1
+      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x + 30, p.y - 28, fill="red" )
+      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x - 30 + 60.0 * self.si / SI_BOMBER2, p.y - 28, fill="green" )
+
 ##############################################################################
 class Fighter():
   images = []
@@ -134,11 +156,13 @@ class Fighter():
   def __init__( self, p, v=None ):
     self.oType = OBJECT_TYPE_JET
     self.p = Point( p.x, p.y, p.z )
-    self.colRect = ( -4, 2, 4, 0 )
+    self.colRect = ( -2, 2, 2, .5 )
     self.v = v if v else vecFromComps( -FIGHTER_DELTA, 0 )
     self.nextMissile = 200
     self.si = SI_FIGHTER
     self.points = POINTS_FIGHTER
+    self.target_y = p.y
+    self.showSICount = 0
 
     if len( Fighter.images ) == 0:
       img = Image.open( "images/vehicles/Fighter.gif" )
@@ -152,13 +176,14 @@ class Fighter():
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
       if param.oType == OBJECT_TYPE_WEAPON:
+        self.showSICount = SHOW_SI_COUNT
         self.si -= param.wDamage
         if self.si < 0:
           e.addObject( Explosion( self.p ) )
 
   def update( self, e ):
     if self.si < 0.0:
-      e.qMessage( MSG_ENEMY_DESTROYED, self )
+      e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
       return False
 
     if( ( ( self.p.x - e.chopper.p.x ) >  100 and self.v.dx() > 0 ) or
@@ -169,13 +194,23 @@ class Fighter():
         self.p.y = 1
     if self.nextMissile > 0:
       self.nextMissile -= 1
-    else:
+    else: # time to shoot a missile
       if( ( self.v.dx() > 0 and e.chopper.p.x > self.p.x ) or
-          ( self.v.dx() < 0 and e.chopper.p.x < self.p.x ) ):
+          ( self.v.dx() < 0 and e.chopper.p.x < self.p.x ) ): # nly shoot if we're going towards the chopper
         d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
-
         e.addObject( MissileSmall( self.p, self.v, d, oType=OBJECT_TYPE_E_WEAPON ) )
         self.nextMissile = 50 + random.randint( 0, 100 )
+
+    if( ( ( self.v.dx() > 0 and e.chopper.p.x > self.p.x ) or
+          ( self.v.dx() < 0 and e.chopper.p.x < self.p.x ) )
+        and random.randint( 0, 10 ) == 0 ): # If jet is behind sometimes try to level with chopper
+      self.target_y = e.chopper.p.y + 2
+
+    if math.fabs( self.p.y - self.target_y ) > .2:
+      if self.p.y < self.target_y:
+        self.p.y += .15
+      elif self.p.y > self.target_y:
+        self.p.y -= .15
 
     self.p.move( self.v )
 
@@ -187,3 +222,8 @@ class Fighter():
     d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
     e.canvas.create_image( p.x, p.y - 25, image=Fighter.images[ d ] )
     e.canvas.create_rectangle( p.x - 60, ps.y, p.x + 60, ps.y, outline="black" )
+
+    if self.showSICount > 0:
+      self.showSICount -= 1
+      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x + 30, p.y - 28, fill="red" )
+      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x - 30 + 60.0 * self.si / SI_FIGHTER, p.y - 28, fill="green" )

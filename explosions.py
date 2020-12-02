@@ -92,7 +92,7 @@ class BombExplosion(): # Explosion that looks like something fell vertically.
     e.canvas.create_image( p.x, p.y + 100, image=img )
 
 class SmokeA(): # Small puff of smoke
-  images = [ ]
+  images = []
 
   def __init__( self, p ):
     self.oType = OBJECT_TYPE_NONE

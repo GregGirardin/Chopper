@@ -21,17 +21,23 @@ class displayEngine():
     self.canvas = Canvas( self.root, width=SCREEN_WIDTH, height=SCREEN_HEIGHT )
     self.canvas.pack()
 
-    self.camera = Point( 0, 15, CAM_Z )
-    self.currentCamOff = -20 # Start from the left initially to show the City
-    self.debugCoords = True # debug. Show x,y and collision box
+    self.debugCoords = True # Show x,y and collision box
     self.chopper = None
-    self.level = 1
-    self.score = 0
     self.highScore = 0
     self.statusMessages = []
     self.statusMsgTime = 0
     self.statusMsgCurrent = None
-    self.msgQ = []
+    self.msgQ = [] # Q of messages to the engine. Loosely couple msg processing.
+    self.newGameTimer = 0
+    self.currentCamOff = -20 # Start from the left initially to show the City
+    self.newGame()
+
+  def newGame( self ):
+    self.camera = Point( 0, 15, CAM_Z )
+    self.level = 1
+    self.score = 0
+    self.numChoppers = NUM_CHOPPERS
+    self.newLevel()
 
   # This is called from objects probably in the context of update()
   # Take actions later in processMessage() after all update()s have been called.
@@ -50,9 +56,10 @@ class displayEngine():
           anyBuildings = True
           break
       if not anyBuildings:
-        self.addStatusMessage( "City has been destroyed." )
+        self.addStatusMessage( "City Destroyed" )
+        self.cityDestroyed = True
       else:
-        self.addStatusMessage( "City has been bombed." )
+        self.addStatusMessage( "City Bombed" )
 
     elif m == MSG_E_BUILDING_DESTROYED:
       self.addToScore( param.points )
@@ -63,9 +70,9 @@ class displayEngine():
           break
       if not anyBuildings:
         self.enemyBaseDestroyed = True
-        self.addStatusMessage( "Enemy base destroyed." )
+        self.addStatusMessage( "Enemy Base Destroyed" )
 
-    elif m == MSG_ENEMY_DESTROYED:
+    elif m == MSG_ENEMY_LEFT_BATTLEFIELD:
       # see if it's the last one.
       self.addToScore( param.points )
       anyEnemies = False
@@ -75,30 +82,41 @@ class displayEngine():
           break
       if not anyEnemies and self.spawningComplete:
         self.allEnemiesDestroyed = True
-        self.addStatusMessage( "All enemies destroyed." )
+        self.addStatusMessage( "No More Enemies" )
 
     elif m == MSG_CHOPPER_DESTROYED:
-      self.addStatusMessage( "Game Over!" )
+      self.numChoppers -= 1
+      if self.numChoppers == 0:
+        self.gameOver()
+      else:
+        self.addStatusMessage( "Chopper Destroyed" )
+        self.currentCamOff = self.chopper.p.x # So the camera pans from where we are back to base.
+        self.chopper = Helicopter( 0, 0, 1 )
+        self.objects.append( self.chopper )
 
     elif m == MSG_SPAWNING_COMPLETE:
       self.spawningComplete = True
 
     if self.allEnemiesDestroyed and self.enemyBaseDestroyed and not self.missionComplete:
       self.missionComplete = True
-      self.addStatusMessage( "Return to base." )
+      self.addStatusMessage( "Return To Base." )
 
     elif m == MSG_MISSION_COMPLETE:
-      self.addStatusMessage( "Level complete." )
-      bonus = 0
+      self.addStatusMessage( "Level Complete." )
+      cityBonus = 0
       for o in self.objects:
         if o.oType == OBJECT_TYPE_BUILDING:
-          bonus += POINTS_BUILDING
-      if bonus:
-        self.addStatusMessage( "City bonus %s" % bonus )
-        self.addToScore( bonus )
+          cityBonus += POINTS_BUILDING
+      if cityBonus:
+        self.addStatusMessage( "City bonus %s" % cityBonus )
+        self.addToScore( cityBonus )
 
       self.level += 1
-      self.newLevel()
+      if self.level == NUM_LEVELS:
+        self.addStatusMessage( "All levels complete" )
+        self.gameOver()
+      else:
+        self.newLevel()
 
   def addToScore( self, points ):
     self.score += points
@@ -106,9 +124,12 @@ class displayEngine():
       self.highScore = self.score
 
   def newLevel( self ):
+    self.cameraOnHelo = False
     self.enemyBaseDestroyed = False
     self.spawningComplete = False
     self.allEnemiesDestroyed = False
+    self.cityDestroyed = False
+
     self.missionComplete = False # Just need to return to base to finish level.
     self.levelComplete = False
     self.time = 0
@@ -182,10 +203,17 @@ class displayEngine():
     self.statusMessages.insert( 0, ( m, time ) ) # list contains (string,time) tuples. Newest to head, pull from end
 
   def gameOver( self ):
-    self.addStatusMessage( "Game Over.", time=100 )
+    self.addStatusMessage( "Game Over Man", time=100 )
+    self.newGameTimer = 100
 
   def update( self ):
     self.time += 1
+
+    if self.newGameTimer > 0:
+      self.newGameTimer -= 1
+    if self.newGameTimer == 1:
+      self.newGame()
+      return
 
     # Collision detection
     numObjects = len( self.objects )
@@ -204,12 +232,15 @@ class displayEngine():
 
     # Move the camera. Determine where we want it relative to the chopper
     # If chopper is facing left, we want the camera on the right side of the screen.
-    tgtCamOff = [ -30, 30, 0 ][ self.chopper.chopperDir ]
+    tgtCamXOff = [ -30, 30, 0 ][ self.chopper.chopperDir ]
 
-    if self.currentCamOff < tgtCamOff:
-      self.currentCamOff += .5
-    elif self.currentCamOff > tgtCamOff:
-      self.currentCamOff -= .5
+    if( self.currentCamOff - tgtCamXOff ) < 1 and ( self.currentCamOff - tgtCamXOff ) > -1:
+      self.currentCamOff = tgtCamXOff
+      self.cameraOnHelo = True
+    elif self.currentCamOff < tgtCamXOff:
+      self.currentCamOff += 1
+    elif self.currentCamOff > tgtCamXOff:
+      self.currentCamOff -= 1
 
     self.camera.x = self.chopper.p.x + self.currentCamOff
     if self.camera.x < MIN_WORLD_X:
@@ -251,7 +282,8 @@ class displayEngine():
 
     t = "%s" % self.score
     e.canvas.create_text( SCREEN_WIDTH / 2, 10, text=t )
-
+    t = "High Score %s" % self.highScore
+    e.canvas.create_text( SCREEN_WIDTH / 2, 25, text=t )
     self.root.update()
 
 def leftHandler( event ):
@@ -286,9 +318,6 @@ e.root.bind( "<Up>",    upHandler )
 e.root.bind( "<Down>",  downHandler )
 e.root.bind( "<Key>",   keyHandler )
 
-e.newLevel( )
-
 while True:
   e.update()
-
   e.draw()

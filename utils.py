@@ -183,6 +183,9 @@ def collisionCheck( e, obj1, obj2 ):
   #
   # We don't care if two enemy vehicles collide, two friendly weapons collide, etc.
 
+  if obj1.oType == OBJECT_TYPE_NONE or obj2.oType == OBJECT_TYPE_NONE:
+    return False
+
   weapon = 0
   eWeapon = 0
   if obj1.oType == OBJECT_TYPE_WEAPON:

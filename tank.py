@@ -18,6 +18,7 @@ class Tank():
     self.colRect = ( -4, 4, 4, 0 )
     self.si = SI_TANK
     self.points = POINTS_TANK
+    self.showSICount = 0
 
     if len( Tank.tankImages ) == 0:
       img = Image.open( "images/vehicles/Tank.gif" ) # 256x128 rectangular sprites
@@ -58,18 +59,20 @@ class Tank():
 
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
+      self.showSICount = SHOW_SI_COUNT
       if param.oType == OBJECT_TYPE_WEAPON:
         self.si -= param.wDamage
         if self.si < 0:
-          e.addObject( BombExplosion( Point( self.p.x, self.p.y, self.p.z ) ) )
+          e.addObject( Explosion( self.p ) )
 
   def update( self, e ):
     if self.si < 0:
-      e.qMessage( MSG_ENEMY_DESTROYED, self )
+      e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
       return False
 
-    self.p.move( self.v )
+    # Are we close to a building?
 
+    self.p.move( self.v )
     if self.p.x < MIN_WORLD_X or self.p.x > MAX_WORLD_X:
       self.v.flipx()
 
@@ -110,3 +113,8 @@ class Tank():
       if treadDistance > self.tpDis[ d ][ segment ]:
         treadDistance -= self.tpDis[ d ][ segment ]  # now treadDistance is the first point along the next segment
         segment += 1
+
+    if self.showSICount > 0:
+      self.showSICount -= 1
+      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x + 30, p.y - 28, fill="red" )
+      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x - 30 + 60.0 * self.si / SI_TANK, p.y - 28, fill="green" )

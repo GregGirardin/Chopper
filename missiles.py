@@ -12,7 +12,7 @@ class Bullet():
     self.oType = oType # OBJECT_TYPE_WEAPON or OBJECT_TYPE_E_WEAPON if sourced from an enemy.
     self.wDamage = WEAPON_DAMAGE_BULLET
     self.p = Point( p.x, p.y, p.z )
-    self.colRect = ( 0, 0, 1, 1 )
+    self.colRect = ( -.5, -.5, .5, .5 )
     self.time = 0
     self.v = copy( v )
 
@@ -41,7 +41,7 @@ class MissileBase():
   def __init__( self, p, v, d, oType=OBJECT_TYPE_WEAPON ):
     self.oType = oType
     self.p = Point( p.x, p.y, p.z )
-    self.colRect = ( -1, 1, 1, 0 )
+    self.colRect = ( -1, .5, 1, -.5 )
     self.v = copy( v ) # Initial velocity Vector
     self.d = d # desired direction. Initial velocity may not be in that direction.
     self.fuel = 100
@@ -50,8 +50,8 @@ class MissileBase():
 
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
-      e.addObject( Explosion( self.p ) )
       self.time = -1 # trick to make it disappear rather than use another flag
+      e.addObject( Explosion( self.p ) )
 
   def update( self, e ):
     if self.time < 0:
@@ -69,8 +69,8 @@ class MissileBase():
     else:
       vx = self.v.dx() # work with components for this
       vy = self.v.dy()
+      vy *= .8
 
-      vy *= .95
       if self.d == DIRECTION_LEFT and vx > -2:
         vx -= .1
       elif self.d == DIRECTION_RIGHT and vx < 2:
@@ -168,8 +168,8 @@ class Bomb():
 
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
-      e.addObject( BombExplosion( self.p ) )
       self.active = False
+      e.addObject( BombExplosion( self.p ) )
 
   def update( self, e ):
     if self.active == False:
