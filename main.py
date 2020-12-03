@@ -21,7 +21,7 @@ class displayEngine():
     self.canvas = Canvas( self.root, width=SCREEN_WIDTH, height=SCREEN_HEIGHT )
     self.canvas.pack()
 
-    self.debugCoords = True # Show x,y and collision box
+    self.debugCoords = False # Show x,y and collision box
     self.chopper = None
     self.highScore = 0
     self.statusMessages = []
@@ -99,7 +99,7 @@ class displayEngine():
 
     if self.allEnemiesDestroyed and self.enemyBaseDestroyed and not self.missionComplete:
       self.missionComplete = True
-      self.addStatusMessage( "Return To Base." )
+      self.addStatusMessage( "Return To Base" )
 
     elif m == MSG_MISSION_COMPLETE:
       self.addStatusMessage( "Level Complete." )
