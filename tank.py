@@ -4,28 +4,42 @@ from utils import *
 from Tkinter import *
 from PIL import ImageTk, Image
 from explosions import *
+from missiles import *
+
+# Tank operational states
+TANK_STATE_MOVE_TO_ATK = 0  # go to building
+TANK_STATE_ATK_CHOPPER = 1     # Helo present. Engage
+TANK_STATE_SHELLING = 2     # in position
+TANK_STATE_RELOAD = 3       # out of weapons, go back to reload.
+TANK_STATE_IDLE = 4
 
 class Tank():
   tankImages = []
   cannonImages = []
+  cannonAngles = [ 0, .175, .40, .55 ] # Canon has 4 positions
 
   def __init__( self, p, v=None ):
     self.oType = OBJECT_TYPE_TANK
-    self.time = 0
     self.v = v if v else Vector( PI, TANK_DELTA )
     self.p = Point( p.x, p.y, p.z )
-    self.cannonAngle = 3 # 0 - 3
+    self.cannonAngle = 0 # 0 - 3
     self.colRect = ( -4, 4, 4, 0 )
     self.si = SI_TANK
     self.points = POINTS_TANK
     self.showSICount = 0
+    self.state = TANK_STATE_MOVE_TO_ATK
+    self.shells = TANK_SHELLS
+    self.delayCount = 0 # general delay counter
+    self.direction = DIRECTION_LEFT
 
     if len( Tank.tankImages ) == 0:
-      img = Image.open( "images/vehicles/Tank.gif" ) # 256x128 rectangular sprites
+      img = Image.open( "images/vehicles/Tank.gif" )
       SW = 256
       SH = 128
       for x in range( 0, 2 ):
         crop = img.crop( ( x * SW, 0, x * SW + SW, SH ) )
+        crop = crop.resize( ( 192, 96 ) ) # 3/4 scale
+
         Tank.tankImages.append( ImageTk.PhotoImage( crop ) )
 
       coords = ( ( ( 1, 0 ), ( 0, 0 ), ( 1, 1 ), ( 1, 1 ) ),
@@ -39,14 +53,16 @@ class Tank():
                               c[ 1 ] * SH / 2 + 5,
                               c[ 0 ] * SW / 2 + SW / 2 - 5,
                               c[ 1 ] * SH / 2 + SH / 2 - 5 ) )
+          crop = crop.resize( ( 96 , 48 ) )
+
           crop = ImageTk.PhotoImage( crop )
           images.append( crop )
         Tank.cannonImages.append( images )
 
     # 'Tractor points' of the caterpillar.
     # x,y coords of the points of the tractor. \___/
-    self.tp = ( ( ( -75, -15 ), ( -60, 0 ), (  60, 0 ), (  90, -23 ) ),
-                ( (  75, -15 ), (  60, 0 ), ( -60, 0 ), ( -90, -23 ) ) )
+    self.tp = ( ( ( -56, -11 ), ( -45, 0 ), (  45, 0 ), (  67, -17 ) ),
+                ( (  56, -11 ), (  45, 0 ), ( -45, 0 ), ( -67, -17 ) ) )
     self.tpDis = [] # lenghts of the 3 segments for use while drawing the tractor.
     for pts in self.tp:
       lenList = []
@@ -70,7 +86,108 @@ class Tank():
       e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
       return False
 
-    # Are we close to a building?
+    # Behavior / AI
+    if e.time % 10 == 0: # Don't need to do this every update..
+      if self.state == TANK_STATE_MOVE_TO_ATK:
+        dis = distanceToObjectType( e, self.p.x, OBJECT_TYPE_BUILDING )
+        if not dis: # No more city buildings ? attack the chopper
+          self.state = TANK_STATE_ATK_CHOPPER
+        else:
+          if dis > 25:
+            self.v = Vector( 0, TANK_DELTA )
+          elif dis < -25:
+            self.v = Vector( PI, TANK_DELTA )
+          else:
+            self.state = TANK_STATE_SHELLING
+
+      elif self.state == TANK_STATE_SHELLING:
+        self.v = Vector( 0, 0 )
+        if self.shells == 0:
+          self.state = TANK_STATE_RELOAD
+        else:
+          if self.delayCount <= 0:
+            self.delayCount = 3
+            self.shells -= 1
+            self.cannonAngle = 0
+            angle = Tank.cannonAngles[ self.cannonAngle ]
+
+            if self.direction == DIRECTION_RIGHT:
+              e.addObject( Bullet( Point( self.p.x + 5, self.p.y + 2, self.p.z ),
+                                   Vector( angle, BULLET_DELTA ),
+                                   oType=OBJECT_TYPE_E_WEAPON, wDamage=10 ) )
+            else:
+              e.addObject( Bullet( Point( self.p.x - 5, self.p.y + 2, self.p.z ),
+                                   Vector( ( PI - angle ), BULLET_DELTA ),
+                                   oType=OBJECT_TYPE_E_WEAPON, wDamage=10 ) )
+            self.state = TANK_STATE_MOVE_TO_ATK
+          else:
+            self.delayCount -= 1
+
+      elif self.state == TANK_STATE_RELOAD:
+        dis = distanceToObjectType( e, self.p.x, OBJECT_TYPE_E_BUILDING )
+        if not dis: # No more buildings to reload at.
+          self.state = TANK_STATE_ATK_CHOPPER
+        else:
+          if dis > 5:
+            self.v = Vector( 0, TANK_DELTA )
+          elif dis < -5:
+            self.v = Vector( PI, TANK_DELTA )
+          else:
+            self.shells = TANK_SHELLS # reloaded
+            self.state = TANK_STATE_MOVE_TO_ATK
+
+      elif self.state == TANK_STATE_ATK_CHOPPER:
+        if self.shells == 0:
+          self.state = TANK_STATE_RELOAD
+
+        dis = e.chopper.p.x - self.p.x
+        if dis > 50:
+          self.v = Vector( 0, TANK_DELTA )
+        elif dis < -50:
+          self.v = Vector( PI, TANK_DELTA )
+        else:  # Chopper isn't too far. Determine angle and shoot.
+          self.v = Vector( 0, 0 )
+          theta = vec_dir( math.fabs( dis ), e.chopper.p.y )
+          if theta > Tank.cannonAngles[ 3 ]:
+            self.cannonAngle = 3
+          elif theta > Tank.cannonAngles[ 2 ]:
+            self.cannonAngle = 2
+          elif theta > Tank.cannonAngles[ 1 ]:
+            self.cannonAngle = 1
+          else:
+            self.cannonAngle = 0
+
+          self.direction = DIRECTION_RIGHT if dis > 0 else DIRECTION_LEFT
+
+          angle = Tank.cannonAngles[ self.cannonAngle ]
+          yOff = [ 2.5, 3, 4, 4 ][ self.cannonAngle ]
+
+          if self.delayCount <= 0:
+            self.delayCount = 5
+            self.shells -= 1
+
+            if self.direction == DIRECTION_RIGHT:
+              e.addObject( Bullet( Point( self.p.x + 6, self.p.y + yOff, self.p.z ),
+                                   Vector( angle, BULLET_DELTA ),
+                                   oType=OBJECT_TYPE_E_WEAPON,
+                                   wDamage=10 ) )
+            else:
+              e.addObject( Bullet( Point( self.p.x - 6, self.p.y + yOff, self.p.z ),
+                                   Vector( ( PI - angle ), BULLET_DELTA ),
+                                   oType=OBJECT_TYPE_E_WEAPON,
+                                   wDamage=10 ) )
+          else:
+            self.delayCount -= 1
+
+      elif self.state == TANK_STATE_IDLE:
+        self.v = Vector( 0, 0 )
+        # No buildings or buildings to get more shells
+
+    if self.v.magnitude > .01: # if not moving don't change direction
+      if self.v.dx() > 0:
+        self.direction = DIRECTION_RIGHT
+      else:
+        self.direction = DIRECTION_LEFT
 
     self.p.move( self.v )
     if self.p.x < MIN_WORLD_X or self.p.x > MAX_WORLD_X:
@@ -79,10 +196,10 @@ class Tank():
     return True
 
   def draw( self, e, p ):
-    of = [ [ 0, -60, -110, -70 ], # Display offsets so 0,0 is bottom center
-           [ 0, -60,  110, -70 ] ]
+    of = [ [ 0, -45, -82, -52 ], # Display offsets so 0,0 is bottom center
+           [ 0, -45,  82, -52 ] ]
 
-    d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
+    d = self.direction
 
     e.canvas.create_image( p.x + of[ d ][ 0 ], p.y + of[ d ][ 1 ], image=Tank.tankImages[ d ] )
     e.canvas.create_image( p.x + of[ d ][ 2 ], p.y + of[ d ][ 3 ], image=Tank.cannonImages[ d ][ self.cannonAngle ] )
@@ -94,12 +211,12 @@ class Tank():
                             p.y + self.tp[ d ][ l + 1 ][ 1 ],
                             fill="black", width=3 )
     # Draw the treads. They go from one line segment to the next as though they are contiguous.
-    TREAD_DISTANCE = 20.0
+    TREAD_DISTANCE = 15.0
 
     if d == DIRECTION_LEFT:
-      treadDistance = float( ( 1000 - self.p.x * 20 ) % TREAD_DISTANCE ) # The distance along the segment. Move the start to animate
+      treadDistance = float( ( 1000 - self.p.x * 15 ) % TREAD_DISTANCE ) # The distance along the segment. Move the start to animate
     else:
-      treadDistance = float( ( self.p.x * 20 % TREAD_DISTANCE ) )
+      treadDistance = float( ( self.p.x * 15 % TREAD_DISTANCE ) )
 
     segment = 0 # Track has 3 segments: \_/
     while segment < 3:
