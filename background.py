@@ -226,35 +226,29 @@ class Base():
     self.p = Point( x, y, z )
     self.label = label
     self.oType = OBJECT_TYPE_BASE
-    self.readyToRefuel = True
-    self.refuelDelay = 0
-
+    self.colRect = ( 0, 0, 0, 0 )
+    self.maxAmount = ( 100.0, 200.0, 10.0, 4.0, 4.0, 10.0 )  # resources
+    self.curAmount = [ 100.0, 200.0, 10.0, 4.0, 4.0, 10.0 ]
     if not Base.image:
       img = Image.open( "images/backgrounds/base.gif" )
       img = img.resize( ( 600, 300 ) )
       Base.image = ImageTk.PhotoImage( img )
 
   def processMessage( self, e, message, param=None ):
-    if message == MSG_REFUELING_AT_BASE:
-      self.refuelDelay = 500
-      self.readyToRefuel = False
+    if message == MSG_CHOPPER_AT_BASE:
+      # Tighly coupled processMessage calling here, so be aware. obj can/will mutate curAmount[]
+      # param is the object that wants resources
+      param.processMessage( e, MSG_RESOURCES_AVAIL, param=self.curAmount )
 
   def update( self, e ):
-    assert False
+    if not( e.time % 100 ):
+      for r in range( RESOURCE_FIRST, RESOURCE_COUNT ):
+        if self.curAmount[ r ] < self.maxAmount[ r ]:
+          self.curAmount[ r ] += self.maxAmount[ r ] / 10 # replenish
 
   def draw( self, e, p ):
-
-    # tbd, move to Base objects[] and this to update()
-    if not self.readyToRefuel:
-      if self.refuelDelay == 0:
-        self.readyToRefuel = True
-        e.addStatusMessage( "Base Ready To Refuel" )
-      else:
-        self.refuelDelay -= 1
-
-    proj = projection( e.camera, self.p )
-    e.canvas.create_image( proj.x - 30, proj.y - 50, image=Base.image )
-    e.canvas.create_text( proj.x - 50, proj.y + 50, text=self.label, fill='black' )
+    e.canvas.create_image( p.x - 30, p.y - 50, image=Base.image )
+    e.canvas.create_text( p.x - 50, p.y + 50, text=self.label, fill='black' )
 
 class CityBuildings():
   imgInfo =\
@@ -283,7 +277,7 @@ class CityBuildings():
     self.label = label
     self.b = b
     self.oType = OBJECT_TYPE_BUILDING
-    self.health = SI_BUILDING
+    self.si = SI_BUILDING
     self.colRect = ( -CityBuildings.imgInfo[ b ][ 3 ] / 40,
                       CityBuildings.imgInfo[ b ][ 4 ] / 20,
                       CityBuildings.imgInfo[ b ][ 3 ] / 40,
@@ -304,12 +298,12 @@ class CityBuildings():
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
       if param.oType == OBJECT_TYPE_E_WEAPON:
-        self.health -= param.wDamage
-        if self.health < 0:
+        self.si -= param.wDamage
+        if self.si < 0:
           e.addObject( Explosion( self.p ) )
 
   def update( self, e ):
-    if self.health < 0.0:
+    if self.si < 0.0:
       e.qMessage( MSG_BUILDING_DESTROYED )
       return False
     return True
@@ -375,6 +369,7 @@ class EBuilding(): # from miscBuildings.gif
     self.label = label
     self.b = b
     self.si = SI_E_BUILDING
+    self.siMax = SI_E_BUILDING
     self.points = POINTS_E_BUILDING
     self.showSICount = 0
 
@@ -412,14 +407,7 @@ class EBuilding(): # from miscBuildings.gif
     p.y -= sb[ 4 ]
     e.canvas.create_image( p.x, p.y, image=sb[ 0 ] )
 
-    if self.showSICount > 0:
-      self.showSICount -= 1
-      e.canvas.create_rectangle( p.x - 20, p.y + 5,
-                                 p.x + 20, p.y + 7,
-                                 fill="red" )
-      e.canvas.create_rectangle( p.x - 20, p.y + 5,
-                                 p.x - 20 + 40.0 * self.si / SI_E_BUILDING, p.y + 7,
-                                 fill="green" )
+    showSI( e.canvas, p, self )
 
 def buildEBase( e, x, bCount, label=None ):
   assert( bCount >= 2 and bCount < EBuilding.numBuildings )

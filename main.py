@@ -73,7 +73,6 @@ class displayEngine():
         self.addStatusMessage( "Enemy Base Destroyed" )
 
     elif m == MSG_ENEMY_LEFT_BATTLEFIELD:
-      # See if it's the last one.
       self.modScore( param.points )
       anyEnemies = False
       for o in self.objects:
@@ -113,7 +112,7 @@ class displayEngine():
         self.modScore( cityBonus )
 
       self.level += 1
-      if self.level == NUM_LEVELS:
+      if self.level > NUM_LEVELS:
         self.addStatusMessage( "All levels complete" )
         self.gameOver()
       else:
@@ -153,7 +152,7 @@ class displayEngine():
     self.bg_objects.append( HillImg( 200, 0, HORIZON_DISTANCE / 4 ) )
 
     # Clouds.. clouds move so they're active.
-    for z in range( 1, 15 ):
+    for z in range( 1, 10 ):
       self.objects.append( Cloud( random.randint( MIN_WORLD_X - 1000, MAX_WORLD_X * 2 ),
                                   random.randint( 150, 225 ),
                                   random.randint( HORIZON_DISTANCE / 20,
@@ -167,11 +166,11 @@ class displayEngine():
       self.bg_objects.append( Grass( random.randint( 20, MAX_WORLD_X ), 0, z ) )
 
     # Trees
-    for z in range( 20, 500, 20 ):
+    for z in range( 40, 500, 20 ):
       self.bg_objects.append( Tree( random.randint( 20, MAX_WORLD_X ), 0, z ) )
 
-    # Base
-    self.bg_objects.append( Base( 0, 0, 2, label="Base" ) )
+    # Base - active, update replenishes resources
+    self.objects.append( Base( 0, 0, 2, label="Base" ) )
 
     # Active objects. We call update() and check for collisions
 

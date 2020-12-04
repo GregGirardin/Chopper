@@ -274,6 +274,13 @@ def distanceToObjectType( e, xPos, oType ):
 
   return d
 
+# object has showSICount, si and siMax
+def showSI( c, p, o ):
+  if o.showSICount > 0:
+    o.showSICount -= 1
+    c.create_rectangle( p.x - 30, p.y - 32, p.x + 30, p.y - 28, fill="red" )
+    c.create_rectangle( p.x - 30, p.y - 32, p.x - 30 + 60.0 * o.si / o.siMax, p.y - 28, fill="green" )
+
 class dbgPoint(): # Debug point
   def __init__( self, p ):
     self.p = Point( p.x, p.y, p.z )

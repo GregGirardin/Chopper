@@ -9,8 +9,8 @@ MIN_WORLD_X = -50
 MAX_WORLD_X = 500
 
 NUM_CHOPPERS = 3
-NUM_CITY_BUILDINGS = 2
-NUM_E_BASE_BUILDINGS = 2
+NUM_CITY_BUILDINGS = 5
+NUM_E_BASE_BUILDINGS = 5
 NUM_LEVELS = 5
 
 # World geometry
@@ -48,8 +48,9 @@ MSG_CHOPPER_DESTROYED = 33
 MSG_SPAWNING_COMPLETE = 34 # all enemies for this level have spawned
 MSG_ENEMY_LEFT_BATTLEFIELD = 35 # destroyed or left due to mission complete
 MSG_MISSION_COMPLETE = 36
-MSG_REFUELING_AT_BASE = 40
+MSG_CHOPPER_AT_BASE = 40
 MSG_SOLDIERS_TO_CITY = 41
+MSG_RESOURCES_AVAIL = 42 # param A list of Resources
 
 DIRECTION_LEFT    = 0
 DIRECTION_RIGHT   = 1
@@ -123,12 +124,27 @@ POINTS_BUILDING = 15 # city buildings not bombed after level complete
 TANK_SHELLS = 20
 
 # Full weapon payload
-MAX_L_MISSILES = 4
-MAX_S_MISSILES = 20
-MAX_BULLETS = 100
-MAX_BOMBS = 4
+MAX_L_MISSILES = 4.0
+MAX_S_MISSILES = 20.0
+MAX_BULLETS = 100.0
+MAX_BOMBS = 4.0
+
+# When vehicles reach city they do damage based on how many soldiers they carry.
+# For now we just subtract from the score.
 
 JEEP_SOLDIERS = 4
 T1_SOLDIERS = 12
 T2_SOLDIERS = 20
 TRUCK_SOLDIERS = 10
+
+# Resources
+RESOURCE_FIRST = 0
+
+RESOURCE_FUEL = 0
+RESOURCE_BULLET = 1
+RESOURCE_SM = 2 # Small missile
+RESOURCE_LM = 3
+RESOURCE_BOMB = 4
+RESOURCE_SI = 5 # Increase structural integrity amount
+
+RESOURCE_COUNT = 6

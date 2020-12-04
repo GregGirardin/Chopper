@@ -25,6 +25,7 @@ class Tank():
     self.cannonAngle = 0 # 0 - 3
     self.colRect = ( -4, 4, 4, 0 )
     self.si = SI_TANK
+    self.siMax = SI_TANK
     self.points = POINTS_TANK
     self.showSICount = 0
     self.state = TANK_STATE_MOVE_TO_ATK
@@ -228,7 +229,4 @@ class Tank():
         treadDistance -= self.tpDis[ d ][ segment ]  # now treadDistance is the first point along the next segment
         segment += 1
 
-    if self.showSICount > 0:
-      self.showSICount -= 1
-      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x + 30, p.y - 28, fill="red" )
-      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x - 30 + 60.0 * self.si / SI_TANK, p.y - 28, fill="green" )
+    showSI( e.canvas, p, self )

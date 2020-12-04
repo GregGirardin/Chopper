@@ -55,13 +55,11 @@ class Helicopter():
     self.chopperDir = DIRECTION_FORWARD
     self.weapon = WEAPON_NONE # This gets set and then fired in the next update()
                               # Trying to keep msg processing loosely coupled.
-    self.si = SI_CHOPPER
-    self.countLargeMissiles = MAX_L_MISSILES
-    self.countSmallMissiles = MAX_S_MISSILES
-    self.countBomb = MAX_BOMBS
-    self.countBullet = MAX_BULLETS
-    self.bulletRdyCounter = 0
+    # resources / weapons. See RESOURCE_XYZ
+    self.maxAmount = ( 100.0, MAX_BULLETS, MAX_S_MISSILES, MAX_L_MISSILES, MAX_BOMBS, SI_CHOPPER )
+    self.curAmount = [ 100.0, MAX_BULLETS, MAX_S_MISSILES, MAX_L_MISSILES, MAX_BOMBS, SI_CHOPPER ]
 
+    self.bulletRdyCounter = 0
     self.displayStickCount = 0
     self.gunAngle = 0
     self.gunPosition = 0 # currently just a number from 0-4
@@ -99,7 +97,7 @@ class Helicopter():
 
     self.angleDict = \
     {
-      ANGLE_0   : 0.0,
+      ANGLE_0   :  .0,
       ANGLE_U5  : -.087,
       ANGLE_D5  :  .087,
       ANGLE_D10 :  .174
@@ -112,6 +110,7 @@ class Helicopter():
     self.bombImg = ImageTk.PhotoImage( bombImage )
 
   def processMessage( self, e, message, param=None ):
+
     if message == MSG_ACCEL_L:
       if self.tgtXVelocity > TGT_VEL_LEFT_FAST and self.p.y > 0 and self.p.x > MIN_WORLD_X:
         self.tgtXVelocity -= 1
@@ -132,23 +131,24 @@ class Helicopter():
     # Don't spawn the weapon here. Let's keep that loosely coupled. Spawn in update().
     elif message == MSG_WEAPON_MISSILE_S:
       if self.chopperDir != DIRECTION_FORWARD:
-        if self.countSmallMissiles > 0:
+        if self.curAmount[ RESOURCE_SM ] > 0:
           self.weapon = WEAPON_SMALL_MISSILE
-          self.countSmallMissiles -= 1
+          self.curAmount[ RESOURCE_SM ] -= 1
     elif message == MSG_WEAPON_MISSILE_L:
       if self.chopperDir != DIRECTION_FORWARD:
-        if self.countLargeMissiles > 0:
-          self.countLargeMissiles -= 1
+        if self.curAmount[ RESOURCE_LM ] > 0:
+          self.curAmount[ RESOURCE_LM ]  -= 1
           self.weapon = WEAPON_LARGE_MISSILE
     elif message == MSG_WEAPON_BOMB:
-      if self.countBomb > 0:
-        self.countBomb -= 1
+      if self.curAmount[ RESOURCE_BOMB ] > 0:
+        self.curAmount[ RESOURCE_BOMB ] -= 1
         self.weapon = WEAPON_BOMB
     elif message == MSG_WEAPON_BULLET:
-      if self.countBullet > 0 and self.bulletRdyCounter == 0:
-        self.countBullet -= 1
+      if self.curAmount[ RESOURCE_BULLET ] > 0 and self.bulletRdyCounter == 0:
+        self.curAmount[ RESOURCE_BULLET ] -= 1
         self.weapon = WEAPON_BULLET
         self.bulletRdyCounter = 5
+
     elif message == MSG_GUN_UP:
       if self.gunPosition > 0:
         self.gunPosition -= 1
@@ -157,11 +157,23 @@ class Helicopter():
       if self.gunPosition < 4:
         self.gunPosition += 1
         self.gunAngle = self.gunAngleFromPosition[ self.gunPosition ]
+
     elif message == MSG_COLLISION_DET and e.cameraOnHelo:
       # Note that we ignore collisions after we spawn a helo but before the camera
       # has moved to the helo, otherwise we could get destroyed again before we see the helo
       if param.oType == OBJECT_TYPE_E_WEAPON:
-        self.si -= param.wDamage
+        self.curAmount[ RESOURCE_SI ] -= param.wDamage
+    elif message == MSG_RESOURCES_AVAIL:
+      # param is a list of resource amounts available that we will mutate
+      for r in range( RESOURCE_FUEL, RESOURCE_COUNT ):
+        wantedAmt = self.maxAmount[ r ] - self.curAmount[ r ]
+        if wantedAmt > 0.0 and param[ r ] > 1.0: # We want some of this resource
+          if wantedAmt > param[ r ]:
+            self.curAmount[ r ] += param[ r ]
+            param[ r ] = 0.0 # take it all
+          else:
+            self.curAmount[ r ] += wantedAmt
+            param[ r ] -= wantedAmt
 
   def loadImages( self ):
     imageNames = ( "bodyForward",
@@ -172,9 +184,8 @@ class Helicopter():
       for name in imageNames:
         Helicopter.heloImages[ name ] = ImageTk.PhotoImage( Image.open( "images/chopper/" + name + ".gif" ) )
 
-  ######################
   def update( self, e ):
-    if self.si < 0:
+    if self.curAmount[ RESOURCE_SI ] < 0:
       e.qMessage( MSG_CHOPPER_DESTROYED, self )
       return False
 
@@ -246,33 +257,20 @@ class Helicopter():
       self.vy = 0
 
       if not self.onGround:
-        for obj in e.bg_objects:
-          # See if we're near a base
+        for obj in e.objects:
+          # See if we're near a base. OBJECT_TYPE_BASE is in objects[]
           if obj.oType == OBJECT_TYPE_BASE:
             if math.fabs( self.p.x - obj.p.x ) < 10.0:
               self.onGround = True
               if e.missionComplete:
                 e.qMessage( MSG_MISSION_COMPLETE )
-              if obj.readyToRefuel:
-                obj.processMessage( e, MSG_REFUELING_AT_BASE )
-                self.fuel = 100.0
-                self.countLargeMissiles = MAX_L_MISSILES
-                self.countSmallMissiles = MAX_S_MISSILES
-                self.countBomb = MAX_BOMBS
-                self.countBullet = MAX_BULLETS
-                if self.si < SI_CHOPPER * .66:
-                  self.si += SI_CHOPPER / 3
-                  e.addStatusMessage( "Refueled", time=50 )
               else:
-                e.addStatusMessage( "Base Not Ready" )
+                obj.processMessage( e, MSG_CHOPPER_AT_BASE, param=self )
 
     else: # Off the ground
       self.onGround = False
 
-    if self.vy > 0:
-      self.rotorSpeed = ROTOR_FAST
-    else:
-      self.rotorSpeed = ROTOR_SLOW
+    self.rotorSpeed = ROTOR_FAST if self.vy > 0 else ROTOR_SLOW
 
     # Weapon spawning
     if self.weapon != WEAPON_NONE:
@@ -472,13 +470,13 @@ class Helicopter():
     e.canvas.create_rectangle( 10, 10, 10 + self.fuel * 2, 15, fill="green" )
     # Structural integrity
     e.canvas.create_rectangle( 10, 15, 10 + 200, 20, fill="red" )
-    e.canvas.create_rectangle( 10, 15, int( 10 + self.si * 200/SI_CHOPPER ), 20, fill="green" )
+    e.canvas.create_rectangle( 10, 15, int( 10 + self.curAmount[ RESOURCE_SI ] * 200/SI_CHOPPER ), 20, fill="green" )
     # Number of weapons
-    for i in range( 0, self.countSmallMissiles ):
+    for i in range( 0, int( self.curAmount[ RESOURCE_SM ] ) ):
       e.canvas.create_image( 10, 50 + 6 * i, image=self.missileSImg )
-    for i in range( 0, self.countLargeMissiles ):
+    for i in range( 0, int( self.curAmount[ RESOURCE_LM ] )  ):
       e.canvas.create_image( 70, 50 + 6 * i, image=self.missileLImg )
-    for i in range( 0, self.countBomb ):
+    for i in range( 0, int( self.curAmount[ RESOURCE_BOMB ] ) ):
       e.canvas.create_image( 10 + 10 * i, 35, image=self.bombImg )
-    t = "Rounds %s" % self.countBullet
+    t = "Rounds %s" % int( self.curAmount[ RESOURCE_BULLET ] )
     e.canvas.create_text( 100, 30, text=t )

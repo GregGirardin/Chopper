@@ -20,6 +20,7 @@ class Jeep():
     self.bounceCount = 0
     self.v = v if v else Vector( PI, JEEP_DELTA )
     self.si = SI_JEEP
+    self.siMax = SI_JEEP
     self.points = POINTS_JEEP
     self.showSICount = 0
     self.soldiers = JEEP_SOLDIERS
@@ -47,12 +48,9 @@ class Jeep():
   # Draw wheels with circles instead of using sprites.
   def drawWheel( self, c, x, y, radius, angle ):
     # outer black / rubber, inner silver, inner white
-    c.create_oval( x - radius, y - radius,
-                   x + radius, y + radius, fill="#111" )
-    c.create_oval( x - radius * .65, y - radius * .65,
-                   x + radius * .65, y + radius * .65, fill="gray" )
-    c.create_oval( x - radius * .33, y - radius * .33,
-                   x + radius * .33, y + radius * .33, fill="white" )
+    c.create_oval( x - radius, y - radius, x + radius, y + radius, fill="#111" )
+    c.create_oval( x - radius * .65, y - radius * .65, x + radius * .65, y + radius * .65, fill="gray" )
+    c.create_oval( x - radius * .33, y - radius * .33, x + radius * .33, y + radius * .33, fill="white" )
 
     # Draw lug nuts to indicate rotation
     theta = 0
@@ -107,12 +105,8 @@ class Jeep():
     for xOff in wheelOffs[ d ]:
       # using our self.p.x as angle in drawWheel() keeps wheel spinning as though it's on the ground.
       self.drawWheel( e.canvas, p.x + xOff, p.y + 14, 12, self.p.x )
-    if self.showSICount > 0:
-      self.showSICount -= 1
-      e.canvas.create_rectangle( p.x - 30, p.y - 32,
-                                 p.x + 30, p.y - 28, fill="red" )
-      e.canvas.create_rectangle( p.x - 30, p.y - 32,
-                                 p.x - 30 + 60.0 * self.si / SI_JEEP, p.y - 28, fill="green" )
+
+    showSI( e.canvas, p, self )
 
 ##############################################################################
 class Transport1():
@@ -125,6 +119,8 @@ class Transport1():
     self.bounceCount = 0
     self.v = v if v else Vector( PI, TRANSPORT1_DELTA )
     self.si = SI_TRANSPORT1
+    self.siMax = SI_TRANSPORT1
+
     self.points = POINTS_TRANSPORT
     self.showSICount = 0
     self.soldiers = T1_SOLDIERS
@@ -194,10 +190,8 @@ class Transport1():
     wheelOffs = [ [ -65, -25, 25, 60 ], [ -65, -25, 25, 65 ] ]
     for xOff in wheelOffs[ d ]:
       self.drawWheel( e.canvas, p.x + xOff, p.y + 18, 15, self.p.x )
-    if self.showSICount > 0:
-      self.showSICount -= 1
-      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x + 30, p.y - 28, fill="red" )
-      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x - 30 + 60.0 * self.si / SI_TRANSPORT1, p.y - 28, fill="green" )
+
+    showSI( e.canvas, p, self )
 
 ##############################################################################
 class Transport2():
@@ -210,6 +204,7 @@ class Transport2():
     self.bounceCount = 0
     self.v = v if v else Vector( PI, TRANSPORT2_DELTA )
     self.si = SI_TRANSPORT2
+    self.siMax = SI_TRANSPORT2
     self.points = POINTS_TRANSPORT
     self.showSICount = 0
     self.soldiers = T2_SOLDIERS
@@ -277,12 +272,7 @@ class Transport2():
     for xOff in wheelOffs[ d ]:
       self.drawWheel( e.canvas, p.x + xOff, p.y + 25, 15, self.p.x)
 
-    if self.showSICount > 0:
-      self.showSICount -= 1
-      e.canvas.create_rectangle( p.x - 30, p.y - 32,
-                                 p.x + 30, p.y - 28, fill="red" )
-      e.canvas.create_rectangle( p.x - 30, p.y - 32,
-                                 p.x - 30 + 60.0 * self.si / SI_TRANSPORT2, p.y - 28, fill="green" )
+    showSI( e.canvas, p, self )
 
 ##############################################################################
 class Truck():
@@ -295,6 +285,7 @@ class Truck():
     self.bounceCount = 0
     self.v = v if v else Vector( PI, TRUCK_DELTA )
     self.si = SI_TRUCK
+    self.siMax = SI_TRUCK
     self.points = POINTS_TRUCK
     self.showSICount = 0
     self.soldiers = TRUCK_SOLDIERS
@@ -364,9 +355,4 @@ class Truck():
     for xOff in wheelOffs[ d ]:
       self.drawWheel( e.canvas, p.x + xOff, p.y + 17, 12, self.p.x )
 
-    if self.showSICount > 0:
-      self.showSICount -= 1
-      e.canvas.create_rectangle( p.x - 30, p.y - 32,
-                                 p.x + 30, p.y - 28, fill="red" )
-      e.canvas.create_rectangle( p.x - 30, p.y - 32,
-                                 p.x - 30 + 60.0 * self.si / SI_TRUCK, p.y - 28, fill="green" )
+    showSI( e.canvas, p, self )

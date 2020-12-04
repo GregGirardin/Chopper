@@ -16,10 +16,12 @@ class Bomber1():
     self.colRect = ( -6, 2, 6, 0 )
     self.v = copy( v ) if v else Vector( PI, BOMBER1_DELTA )
     self.si = SI_BOMBER1
+    self.siMax = SI_BOMBER1
     self.points = POINTS_BOMBER
     self.bombs = 2
     self.target_y = p.y
     self.showSICount = 0
+
     if len( Bomber1.images ) == 0:
       img = Image.open( "images/vehicles/Bomber1.png" )
       SW = 512
@@ -79,11 +81,7 @@ class Bomber1():
     d = DIRECTION_LEFT if self.v.dx() < 0.0 else DIRECTION_RIGHT
     e.canvas.create_image( p.x, p.y - 20, image=Bomber1.images[ d ] )
     e.canvas.create_rectangle( p.x - 60, ps.y, p.x + 60, ps.y, outline="black" )
-
-    if self.showSICount > 0:
-      self.showSICount -= 1
-      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x + 30, p.y - 28, fill="red" )
-      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x - 30 + 60.0 * self.si / SI_BOMBER1, p.y - 28, fill="green" )
+    showSI( e.canvas, p, self )
 
 ##############################################################################
 class Bomber2():
@@ -95,6 +93,7 @@ class Bomber2():
     self.colRect = ( -4, 2, 4, 0 )
     self.v = v if v else Vector( PI, BOMBER2_DELTA )
     self.si = SI_BOMBER2
+    self.siMax = SI_BOMBER2
     self.points = POINTS_BOMBER
     self.showSICount = 0
     self.target_y = p.y
@@ -160,10 +159,7 @@ class Bomber2():
     e.canvas.create_image( p.x, p.y - 40, image=Bomber2.images[ d ] )
     e.canvas.create_rectangle( p.x - 60, ps.y, p.x + 60, ps.y, outline="black" )
 
-    if self.showSICount > 0:
-      self.showSICount -= 1
-      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x + 30, p.y - 28, fill="red" )
-      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x - 30 + 60.0 * self.si / SI_BOMBER2, p.y - 28, fill="green" )
+    showSI( e.canvas, p, self )
 
 ##############################################################################
 class Fighter():
@@ -176,6 +172,7 @@ class Fighter():
     self.v = v if v else vecFromComps( -FIGHTER_DELTA, 0 )
     self.nextMissile = 200
     self.si = SI_FIGHTER
+    self.siMax = SI_FIGHTER
     self.points = POINTS_FIGHTER
     self.target_y = p.y
     self.showSICount = 0
@@ -246,7 +243,4 @@ class Fighter():
     e.canvas.create_image( p.x, p.y - 25, image=Fighter.images[ d ] )
     e.canvas.create_rectangle( p.x - 60, ps.y, p.x + 60, ps.y, outline="black" )
 
-    if self.showSICount > 0:
-      self.showSICount -= 1
-      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x + 30, p.y - 28, fill="red" )
-      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x - 30 + 60.0 * self.si / SI_FIGHTER, p.y - 28, fill="green" )
+    showSI( e.canvas, p, self )
