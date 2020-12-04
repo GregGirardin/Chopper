@@ -6,16 +6,14 @@ EFFECTIVE_ZERO = .001
 
 # Think of these in terms of meters maybe
 MIN_WORLD_X = -50
-MAX_WORLD_X = 1000
+MAX_WORLD_X = 500
 
 NUM_CHOPPERS = 3
 NUM_CITY_BUILDINGS = 5
-NUM_E_BASE_BUILDINGS = 10
+NUM_E_BASE_BUILDINGS = 5
 
-NUM_LEVELS = 3
-
-SHOW_SI_COUNT = 50
-
+NUM_LEVELS = 5
+SHOW_SI_COUNT = 50 # How long to show an enemies structural integrity in "loops"
 HORIZON_DISTANCE = 10000
 
 MAX_MTN_WIDTH = 500
@@ -78,7 +76,7 @@ MSG_WEAPON_BULLET     = 7
 MSG_GUN_UP            = 10
 MSG_GUN_DOWN          = 11
 
-MSG_UI = 12
+MSG_UI = 12 # a UI messages to main Q sent to chopper for handling.
 
 MSG_COLLISION_DET = 20 # Collision detected
 
@@ -88,22 +86,24 @@ MSG_CHOPPER_DESTROYED = 33
 MSG_SPAWNING_COMPLETE = 34 # all enemies for this level have spawned
 MSG_ENEMY_LEFT_BATTLEFIELD = 35 # destroyed or left due to mission complete
 MSG_MISSION_COMPLETE = 36
-
 MSG_REFUELING_AT_BASE = 40
+MSG_SOLDIERS_TO_CITY = 41
 
 DIRECTION_LEFT    = 0
 DIRECTION_RIGHT   = 1
 DIRECTION_FORWARD = 2
 
 # Movement per update
-TANK_DELTA        = .1
-CHOPPER_V_DELTA   = .01
-JEEP_DELTA        = .2
-TRUCK_DELTA       = .2
-TRANSPORT1_DELTA  = .2
-TRANSPORT2_DELTA  = .2
-BOMBER_DELTA = .6
-FIGHTER_DELTA = .8
+TANK_DELTA        = .2
+CHOPPER_Y_DELTA   = .01
+CHOPPER_X_DELTA   = .02
+JEEP_DELTA        = .3
+TRUCK_DELTA       = .28
+TRANSPORT1_DELTA  = .15
+TRANSPORT2_DELTA  = .22
+BOMBER1_DELTA = .5
+BOMBER2_DELTA = .6
+FIGHTER_DELTA = .9
 BULLET_DELTA = 1.5
 
 # Active object types
@@ -127,33 +127,46 @@ OBJECT_TYPE_BUILDING    = 12 # city building.
 
 OBJECT_TYPE_MGR         = 99
 
-# Game objectives
-
 # weapon damage
-WEAPON_DAMAGE_BULLET    = 1.0
-WEAPON_DAMAGE_MISSLE_S  = 10.0
-WEAPON_DAMAGE_MISSLE_L  = 30.0
+WEAPON_DAMAGE_BULLET    =   1.0
+WEAPON_DAMAGE_MISSLE_S  =  10.0
+WEAPON_DAMAGE_MISSLE_L  =  30.0
 WEAPON_DAMAGE_BOMB      = 100.0
 
 # Initial structural integrity, "health"
-SI_CHOPPER    = 20.0
+SI_CHOPPER    = 20.0 # The player
+
 SI_JEEP       = 10.0
-SI_TRANSPORT1 = 15.0
-SI_TRANSPORT2 = 15.0
 SI_TRUCK      = 15.0
-SI_TANK       = 50.0
-SI_BOMBER     = 40.0
-SI_BOMBER2    = 40.0
-SI_FIGHTER    = 10.0
-SI_BUILDING   = 50.0
+SI_TRANSPORT1 = 20.0
+SI_TRANSPORT2 = 25.0
+SI_TANK       = 90.0
+SI_FIGHTER    = 15.0
+SI_BOMBER1    = 60.0
+SI_BOMBER2    = 30.0
+SI_BUILDING   = 40.0
+SI_E_BUILDING = 20.0
 
 # points
 POINTS_JEEP = 5
 POINTS_TRUCK = 10
 POINTS_TRANSPORT = 15
-POINTS_TANK = 20
-POINTS_BOMBER = 25
+POINTS_TANK = 15
+POINTS_BOMBER = 20
 POINTS_FIGHTER = 50
-POINTS_E_BUILDING = 10
-POINTS_BUILDING = 10
+POINTS_E_BUILDING = 10 # enemy base building.
+POINTS_BUILDING = 15 # city buildings not bombed after level complete
 
+# Weapon counts
+TANK_SHELLS = 20
+
+# Full weapon payload
+MAX_L_MISSILES = 4
+MAX_S_MISSILES = 20
+MAX_BULLETS = 100
+MAX_BOMBS = 4
+
+JEEP_SOLDIERS = 4
+T1_SOLDIERS = 12
+T2_SOLDIERS = 20
+TRUCK_SOLDIERS = 10

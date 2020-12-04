@@ -6,6 +6,8 @@ from Tkinter import *
 from PIL import ImageTk, Image
 from copy import copy
 
+# If vehicles make it to a city building they release soldiers and cause casualties
+
 # Jeeps and trucks
 class Jeep():
   images = []
@@ -14,13 +16,13 @@ class Jeep():
     self.oType = OBJECT_TYPE_JEEP
     self.p = Point( p.x, p.y, p.z )
     self.colRect = ( -3, 3, 3, 0 )
-    self.time = 0
     self.imgIx = 0
     self.bounceCount = 0
     self.v = v if v else Vector( PI, JEEP_DELTA )
     self.si = SI_JEEP
     self.points = POINTS_JEEP
     self.showSICount = 0
+    self.soldiers = JEEP_SOLDIERS
 
     if len( Jeep.images ) == 0:
       img = Image.open( "images/vehicles/Jeep.png" )
@@ -45,9 +47,12 @@ class Jeep():
   # Draw wheels with circles instead of using sprites.
   def drawWheel( self, c, x, y, radius, angle ):
     # outer black / rubber, inner silver, inner white
-    c.create_oval( x - radius, y - radius, x + radius, y + radius, fill="#111" )
-    c.create_oval( x - radius * .65, y - radius * .65, x + radius * .65, y + radius * .65, fill="gray" )
-    c.create_oval( x - radius * .33, y - radius * .33, x + radius * .33, y + radius * .33, fill="white" )
+    c.create_oval( x - radius, y - radius,
+                   x + radius, y + radius, fill="#111" )
+    c.create_oval( x - radius * .65, y - radius * .65,
+                   x + radius * .65, y + radius * .65, fill="gray" )
+    c.create_oval( x - radius * .33, y - radius * .33,
+                   x + radius * .33, y + radius * .33, fill="white" )
 
     # Draw lug nuts to indicate rotation
     theta = 0
@@ -77,7 +82,16 @@ class Jeep():
         self.imgIx = 1 # angle down
       self.bounceCount -= 1
 
-    if self.p.x < MIN_WORLD_X or self.p.x > MAX_WORLD_X:
+    if self.p.x < MIN_WORLD_X:
+      e.qMessage( MSG_SOLDIERS_TO_CITY, self.soldiers )
+      self.soldiers = 0
+      self.v.flipx()
+    elif self.p.x > MAX_WORLD_X + 100:
+      if e.cityDestroyed == True:
+        e.addStatusMessage( "Jeep Left Theater" )
+        e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
+        return False
+      self.soldiers = JEEP_SOLDIERS
       self.v.flipx()
 
     self.p.move( self.v )
@@ -91,13 +105,14 @@ class Jeep():
     e.canvas.create_image( p.x, p.y, image=Jeep.images[ d ][ self.imgIx ] )
     wheelOffs = [ [ -43, 40 ], [ -38, 43 ] ]
     for xOff in wheelOffs[ d ]:
-      # using our self.p.x as angle in drawWheel() keeps wheel spinning
-      # as though it's on the ground.
+      # using our self.p.x as angle in drawWheel() keeps wheel spinning as though it's on the ground.
       self.drawWheel( e.canvas, p.x + xOff, p.y + 14, 12, self.p.x )
     if self.showSICount > 0:
       self.showSICount -= 1
-      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x + 30, p.y - 28, fill="red" )
-      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x - 30 + 60.0 * self.si / SI_JEEP, p.y - 28, fill="green" )
+      e.canvas.create_rectangle( p.x - 30, p.y - 32,
+                                 p.x + 30, p.y - 28, fill="red" )
+      e.canvas.create_rectangle( p.x - 30, p.y - 32,
+                                 p.x - 30 + 60.0 * self.si / SI_JEEP, p.y - 28, fill="green" )
 
 ##############################################################################
 class Transport1():
@@ -107,12 +122,12 @@ class Transport1():
     self.oType = OBJECT_TYPE_TRANSPORT1
     self.p = Point( p.x, p.y, p.z )
     self.colRect = ( -5, 3, 5, 0 )
-    self.time = 0
     self.bounceCount = 0
     self.v = v if v else Vector( PI, TRANSPORT1_DELTA )
     self.si = SI_TRANSPORT1
     self.points = POINTS_TRANSPORT
     self.showSICount = 0
+    self.soldiers = T1_SOLDIERS
 
     if len( Transport1.images ) == 0:
       img = Image.open( "images/vehicles/transport1.gif" )
@@ -153,7 +168,17 @@ class Transport1():
     if self.si < 0:
       e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
       return False
-    if self.p.x < MIN_WORLD_X or self.p.x > MAX_WORLD_X:
+
+    if self.p.x < MIN_WORLD_X:
+      e.qMessage( MSG_SOLDIERS_TO_CITY, self.soldiers )
+      self.soldiers = 0
+      self.v.flipx()
+    elif self.p.x > MAX_WORLD_X + 100:
+      if e.cityDestroyed == True:
+        e.addStatusMessage( "Transport Left Theater" )
+        e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
+        return False
+      self.soldiers = T1_SOLDIERS
       self.v.flipx()
 
     self.p.move( self.v )
@@ -181,12 +206,12 @@ class Transport2():
     self.oType = OBJECT_TYPE_TRANSPORT2
     self.p = Point( p.x, p.y, p.z )
     self.colRect = ( -5, 3, 5, 0 )
-    self.time = 0
     self.bounceCount = 0
     self.v = v if v else Vector( PI, TRANSPORT2_DELTA )
     self.si = SI_TRANSPORT2
     self.points = POINTS_TRANSPORT
     self.showSICount = 0
+    self.soldiers = T2_SOLDIERS
 
     if len( Transport2.images ) == 0:
       img = Image.open( "images/vehicles/transport2.gif" )
@@ -208,8 +233,10 @@ class Transport2():
 
   def drawWheel( self, c, x, y, radius, angle ):
     c.create_oval( x - radius, y - radius, x + radius, y + radius, fill="#111" )
-    c.create_oval( x - radius * .65, y - radius * .65, x + radius * .65, y + radius * .65, fill="gray" )
-    c.create_oval( x - radius * .33, y - radius * .33, x + radius * .33, y + radius * .33, fill="white" )
+    c.create_oval( x - radius * .65, y - radius * .65,
+                   x + radius * .65, y + radius * .65, fill="gray" )
+    c.create_oval( x - radius * .33, y - radius * .33,
+                   x + radius * .33, y + radius * .33, fill="white" )
 
     # Draw lug nuts to indicate rotation
     theta = 0
@@ -225,8 +252,18 @@ class Transport2():
       e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
       return False
 
-    if self.p.x < MIN_WORLD_X or self.p.x > MAX_WORLD_X:
+    if self.p.x < MIN_WORLD_X:
+      e.qMessage( MSG_SOLDIERS_TO_CITY, self.soldiers )
+      self.soldiers = 0
       self.v.flipx()
+    elif self.p.x > MAX_WORLD_X + 100:
+      if e.cityDestroyed == True:
+        e.addStatusMessage( "Transport Left Theater" )
+        e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
+        return False
+      self.soldiers = T2_SOLDIERS
+      self.v.flipx()
+
     self.p.move( self.v )
 
     return True
@@ -242,8 +279,10 @@ class Transport2():
 
     if self.showSICount > 0:
       self.showSICount -= 1
-      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x + 30, p.y - 28, fill="red" )
-      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x - 30 + 60.0 * self.si / SI_TRANSPORT2, p.y - 28, fill="green" )
+      e.canvas.create_rectangle( p.x - 30, p.y - 32,
+                                 p.x + 30, p.y - 28, fill="red" )
+      e.canvas.create_rectangle( p.x - 30, p.y - 32,
+                                 p.x - 30 + 60.0 * self.si / SI_TRANSPORT2, p.y - 28, fill="green" )
 
 ##############################################################################
 class Truck():
@@ -253,12 +292,12 @@ class Truck():
     self.oType = OBJECT_TYPE_TRUCK
     self.p = Point( p.x, p.y, p.z )
     self.colRect = ( -3, 2.5, 3, 0 )
-    self.time = 0
     self.bounceCount = 0
     self.v = v if v else Vector( PI, TRUCK_DELTA )
     self.si = SI_TRUCK
     self.points = POINTS_TRUCK
     self.showSICount = 0
+    self.soldiers = TRUCK_SOLDIERS
 
     if len( Truck.images ) == 0:
       img = Image.open( "images/vehicles/Truck1.gif" )
@@ -280,8 +319,10 @@ class Truck():
   # Draw wheels with circles instead of using sprites.
   def drawWheel( self, c, x, y, radius, angle ):
     c.create_oval( x - radius, y - radius, x + radius, y + radius, fill="#111" )
-    c.create_oval( x - radius * .65, y - radius * .65, x + radius * .65, y + radius * .65, fill="gray" )
-    c.create_oval( x - radius * .33, y - radius * .33, x + radius * .33, y + radius * .33, fill="white" )
+    c.create_oval( x - radius * .65, y - radius * .65,
+                   x + radius * .65, y + radius * .65, fill="gray" )
+    c.create_oval( x - radius * .33, y - radius * .33,
+                   x + radius * .33, y + radius * .33, fill="white" )
 
     # Draw lug nuts to indicate rotation
     theta = 0
@@ -297,8 +338,18 @@ class Truck():
       e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
       return False
 
-    if self.p.x < MIN_WORLD_X or self.p.x > MAX_WORLD_X:
+    if self.p.x < MIN_WORLD_X:
+      e.qMessage( MSG_SOLDIERS_TO_CITY, self.soldiers )
+      self.soldiers = 0
       self.v.flipx()
+    elif self.p.x > MAX_WORLD_X + 100:
+      if e.cityDestroyed == True:
+        e.addStatusMessage( "Truck Left Theater" )
+        e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
+        return False
+      self.soldiers = TRUCK_SOLDIERS
+      self.v.flipx()
+
     self.p.move( self.v )
 
     return True
@@ -314,5 +365,7 @@ class Truck():
 
     if self.showSICount > 0:
       self.showSICount -= 1
-      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x + 30, p.y - 28, fill="red" )
-      e.canvas.create_rectangle( p.x - 30, p.y - 32, p.x - 30 + 60.0 * self.si / SI_TRUCK, p.y - 28, fill="green" )
+      e.canvas.create_rectangle( p.x - 30, p.y - 32,
+                                 p.x + 30, p.y - 28, fill="red" )
+      e.canvas.create_rectangle( p.x - 30, p.y - 32,
+                                 p.x - 30 + 60.0 * self.si / SI_TRUCK, p.y - 28, fill="green" )

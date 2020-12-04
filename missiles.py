@@ -6,11 +6,10 @@ from Tkinter import *
 from PIL import ImageTk, Image
 from copy import copy
 
-
 class Bullet():
-  def __init__( self, p, v, oType=OBJECT_TYPE_WEAPON ):
+  def __init__( self, p, v, oType=OBJECT_TYPE_WEAPON, wDamage=WEAPON_DAMAGE_BULLET ):
     self.oType = oType # OBJECT_TYPE_WEAPON or OBJECT_TYPE_E_WEAPON if sourced from an enemy.
-    self.wDamage = WEAPON_DAMAGE_BULLET
+    self.wDamage = wDamage
     self.p = Point( p.x, p.y, p.z )
     self.colRect = ( -.5, -.5, .5, .5 )
     self.time = 0
@@ -65,7 +64,7 @@ class MissileBase():
       self.thrust = False
 
     if self.thrust == False: # Thrust off, fall.
-      self.v.add( Vector( PI / 2, .05 ) ) # gravity
+      self.v.add( Vector( - PI / 2, .05 ) ) # gravity
     else:
       vx = self.v.dx() # work with components for this
       vy = self.v.dy()
@@ -175,7 +174,7 @@ class Bomb():
     if self.active == False:
       return False
 
-    self.v.add( Vector( PI / 2, .05 ) ) # gravity
+    self.v.add( Vector( -PI / 2, .05 ) ) # gravity
     self.p.move( self.v )
 
     if self.p.y <= 0.0:

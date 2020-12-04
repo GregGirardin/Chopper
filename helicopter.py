@@ -18,17 +18,17 @@ class Helicopter():
     self.loadImages()
     self.vx = 0.0
     self.vy = 0.0
-    self.curXVelocity = TGT_VEL_STOP
     self.tgtXVelocity = TGT_VEL_STOP
     self.tgtYVelocity = TGT_VEL_STOP
     self.chopperDir = DIRECTION_FORWARD
     self.weapon = WEAPON_NONE # This gets set and then fired in the next update()
                               # Trying to keep msg processing loosely coupled.
     self.si = SI_CHOPPER
-    self.countLargeMissiles = 4
-    self.countSmallMissiles = 20
-    self.countBomb = 4
-    self.countBullet = 100
+    self.countLargeMissiles = MAX_L_MISSILES
+    self.countSmallMissiles = MAX_S_MISSILES
+    self.countBomb = MAX_BOMBS
+    self.countBullet = MAX_BULLETS
+    self.bulletRdyCounter = 0
 
     self.displayStickCount = 0
     self.gunAngle = 0
@@ -81,7 +81,7 @@ class Helicopter():
 
   def processMessage( self, e, message, param=None ):
     if message == MSG_ACCEL_L:
-      if self.tgtXVelocity > TGT_VEL_LEFT_FAST and self.p.y > 0:
+      if self.tgtXVelocity > TGT_VEL_LEFT_FAST and self.p.y > 0 and self.p.x > MIN_WORLD_X:
         self.tgtXVelocity -= 1
         self.displayStickCount = DISPLAY_CONTROL_TIME
     elif message == MSG_ACCEL_R:
@@ -113,9 +113,10 @@ class Helicopter():
         self.countBomb -= 1
         self.weapon = WEAPON_BOMB
     elif message == MSG_WEAPON_BULLET:
-      if self.countBullet > 0:
+      if self.countBullet > 0 and self.bulletRdyCounter == 0:
         self.countBullet -= 1
         self.weapon = WEAPON_BULLET
+        self.bulletRdyCounter = 5
     elif message == MSG_GUN_UP:
       if self.gunPosition > 0:
         self.gunPosition -= 1
@@ -145,6 +146,9 @@ class Helicopter():
       e.qMessage( MSG_CHOPPER_DESTROYED, self )
       return False
 
+    if self.bulletRdyCounter > 0:
+      self.bulletRdyCounter -= 1
+
     # Fuel consumption
     if self.p.y > 0.0:
       self.fuel -= .01
@@ -167,20 +171,20 @@ class Helicopter():
       # Accelerate to target velocities
       tv = self.tgtXVelDict[ self.tgtXVelocity ]
       if self.vx < tv:
-        self.vx += CHOPPER_V_DELTA
+        self.vx += CHOPPER_X_DELTA
       elif self.vx > tv:
-        self.vx -= CHOPPER_V_DELTA
-      if math.fabs( self.vx - tv ) < .01: # In case of rounding
+        self.vx -= CHOPPER_X_DELTA
+      if math.fabs( self.vx - tv ) < CHOPPER_X_DELTA: # In case of rounding
         self.vx = tv
 
       tv = self.tgtYVelDict[ self.tgtYVelocity ]
       if tv == TGT_VEL_STOP:
         self.vy *= .5
       elif self.vy < tv:
-        self.vy += CHOPPER_V_DELTA
+        self.vy += CHOPPER_Y_DELTA
       elif self.vy > tv:
-        self.vy -= CHOPPER_V_DELTA
-      if math.fabs( self.vy - tv ) <= .01: # In case of rounding
+        self.vy -= CHOPPER_Y_DELTA
+      if math.fabs( self.vy - tv ) <= CHOPPER_Y_DELTA: # In case of rounding
         self.vy = tv
 
     self.p.y += self.vy
@@ -200,6 +204,8 @@ class Helicopter():
       self.tgtYVelocity = TGT_VEL_STOP
     elif self.p.y <= 0: # On the ground.
       self.p.y = 0
+      if self.tgtYVelocity < TGT_VEL_STOP:
+        self.tgtYVelocity = TGT_VEL_STOP
       if self.tgtXVelocity > TGT_VEL_STOP:
         self.tgtXVelocity = TGT_VEL_RIGHT_STOP
       elif self.tgtXVelocity < TGT_VEL_STOP:
@@ -213,22 +219,20 @@ class Helicopter():
           if obj.oType == OBJECT_TYPE_BASE:
             if math.fabs( self.p.x - obj.p.x ) < 10.0:
               self.onGround = True
+              if e.missionComplete:
+                e.qMessage( MSG_MISSION_COMPLETE )
               if obj.readyToRefuel:
                 obj.processMessage( e, MSG_REFUELING_AT_BASE )
                 self.fuel = 100.0
-                self.countLargeMissiles = 4
-                self.countSmallMissiles = 20
-                self.countBomb = 4
-                self.countBullet = 250
+                self.countLargeMissiles = MAX_L_MISSILES
+                self.countSmallMissiles = MAX_S_MISSILES
+                self.countBomb = MAX_BOMBS
+                self.countBullet = MAX_BULLETS
                 if self.si < SI_CHOPPER * .66:
                   self.si += SI_CHOPPER / 3
-                if e.missionComplete:
-                  e.qMessage( MSG_MISSION_COMPLETE )
-                else:
                   e.addStatusMessage( "Refueled", time=50 )
               else:
                 e.addStatusMessage( "Base Not Ready" )
-              break
 
     else: # Off the ground
       self.onGround = False
@@ -244,10 +248,10 @@ class Helicopter():
       if self.weapon == WEAPON_BULLET:
         if self.chopperDir == DIRECTION_RIGHT:
           e.addObject( Bullet( Point( self.p.x + 1, self.p.y + 1, self.p.z ),
-                               Vector( -self.gunAngle, math.fabs( self.vx ) + BULLET_DELTA ) ) )
+                               Vector( self.gunAngle, math.fabs( self.vx ) + BULLET_DELTA ) ) )
         elif self.chopperDir == DIRECTION_LEFT:
           e.addObject( Bullet( Point( self.p.x - 1, self.p.y + 1, self.p.z ),
-                               Vector( -( PI - self.gunAngle ), math.fabs( self.vx ) + BULLET_DELTA ) ) )
+                               Vector( ( PI - self.gunAngle ), math.fabs( self.vx ) + BULLET_DELTA ) ) )
       elif self.weapon == WEAPON_SMALL_MISSILE:
         e.addObject( MissileSmall( self.p, v, self.chopperDir ) )
       elif self.weapon == WEAPON_LARGE_MISSILE:

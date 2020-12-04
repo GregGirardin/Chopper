@@ -49,7 +49,7 @@ class displayEngine():
     if m == MSG_UI: # currently all UI messages are for the chopper.
       self.chopper.processMessage( self, param )
 
-    if m == MSG_BUILDING_DESTROYED:
+    elif m == MSG_BUILDING_DESTROYED:
       anyBuildings = False
       for o in self.objects:
         if o.oType == OBJECT_TYPE_BUILDING:
@@ -62,7 +62,7 @@ class displayEngine():
         self.addStatusMessage( "City Bombed" )
 
     elif m == MSG_E_BUILDING_DESTROYED:
-      self.addToScore( param.points )
+      self.modScore( param.points )
       anyBuildings = False
       for o in self.objects:
         if o.oType == OBJECT_TYPE_E_BUILDING:
@@ -74,7 +74,7 @@ class displayEngine():
 
     elif m == MSG_ENEMY_LEFT_BATTLEFIELD:
       # see if it's the last one.
-      self.addToScore( param.points )
+      self.modScore( param.points )
       anyEnemies = False
       for o in self.objects:
         if o.oType >= OBJECT_TYPE_FIRST_ENEMY and o.oType <= OBJECT_TYPE_LAST_ENEMY:
@@ -97,9 +97,10 @@ class displayEngine():
     elif m == MSG_SPAWNING_COMPLETE:
       self.spawningComplete = True
 
-    if self.allEnemiesDestroyed and self.enemyBaseDestroyed and not self.missionComplete:
-      self.missionComplete = True
-      self.addStatusMessage( "Return To Base" )
+    elif m == MSG_SOLDIERS_TO_CITY:
+      if not self.cityDestroyed:
+        self.addStatusMessage( "Casualties!" )
+        self.modScore( -param )
 
     elif m == MSG_MISSION_COMPLETE:
       self.addStatusMessage( "Level Complete." )
@@ -109,7 +110,7 @@ class displayEngine():
           cityBonus += POINTS_BUILDING
       if cityBonus:
         self.addStatusMessage( "City bonus %s" % cityBonus )
-        self.addToScore( cityBonus )
+        self.modScore( cityBonus )
 
       self.level += 1
       if self.level == NUM_LEVELS:
@@ -118,8 +119,14 @@ class displayEngine():
       else:
         self.newLevel()
 
-  def addToScore( self, points ):
+    if self.allEnemiesDestroyed and self.enemyBaseDestroyed and not self.missionComplete:
+      self.missionComplete = True
+      self.addStatusMessage( "Return To Base" )
+
+  def modScore( self, points ): # add / subtract points to score
     self.score += points
+    if self.score < 0:
+      self.score = 0
     if self.score > self.highScore:
       self.highScore = self.score
 
@@ -145,31 +152,23 @@ class displayEngine():
     self.bg_objects.append( MountainImg( 200, 0, HORIZON_DISTANCE / 2 ) )
     self.bg_objects.append( HillImg( 200, 0, HORIZON_DISTANCE / 4 ) )
 
-    # Clouds
-    for z in range( 1, 8 ):
-      self.bg_objects.append( Cloud( random.randint( MIN_WORLD_X, MAX_WORLD_X ),
-                                     random.randint( 150, 225 ),
-                                     random.randint( HORIZON_DISTANCE / 20,
-                                                     HORIZON_DISTANCE / 4 ) ) ) # in front of the mountains
+    # Clouds.. clouds move so they're active.
+    for z in range( 1, 15 ):
+      self.objects.append( Cloud( random.randint( MIN_WORLD_X - 1000, MAX_WORLD_X * 2 ),
+                                  random.randint( 150, 225 ),
+                                  random.randint( HORIZON_DISTANCE / 20,
+                                                  HORIZON_DISTANCE / 2 ) ) ) # in front of the mountains
     # Rocks
-    '''
-    for z in range( -5, 9, 1 ): # Z is behind projection plane but the math works.
-      x = random.randint( -500, 500 )
-      if math.fabs( x ) > 30:
-        self.bg_objects.append( Rock( x, 0, z ) )
-    '''
+    for z in range( -3, 12, 2 ): # Z is behind projection plane but the math works.
+      self.bg_objects.append( Rock( random.randint( 30, MAX_WORLD_X ), 0, z ) )
 
     # Grass
-    for z in range( 20, 40, 1 ):
-      x = random.randint( -20, 1000 )
-      if math.fabs( x ) > 20:
-        self.bg_objects.append( Grass( x, 0, z ) )
+    for z in range( 25, 40, 1 ):
+      self.bg_objects.append( Grass( random.randint( 20, MAX_WORLD_X ), 0, z ) )
 
     # Trees
-    for z in range( 500, 50, -10 ):
-      x = random.randint( -500, 500 )
-      if math.fabs( x ) > 20:
-        self.bg_objects.append( Tree( x, 0, z ) )
+    for z in range( 20, 500, 20 ):
+      self.bg_objects.append( Tree( random.randint( 20, MAX_WORLD_X ), 0, z ) )
 
     # Base
     self.bg_objects.append( Base( 0, 0, 2, label="Base" ) )
@@ -180,8 +179,8 @@ class displayEngine():
     self.chopper = Helicopter( 0, 0, 1 )
     self.objects.append( self.chopper )
 
-    buildCity( self, MIN_WORLD_X - 10, NUM_CITY_BUILDINGS )
-    buildBase( self, MAX_WORLD_X / 3, NUM_E_BASE_BUILDINGS )
+    buildCity( self, MIN_WORLD_X, NUM_CITY_BUILDINGS )
+    buildEBase( self, MAX_WORLD_X / 2, NUM_E_BASE_BUILDINGS + self.level * 2 )
 
     self.objects.append( GameManager( self ) )
 
@@ -203,17 +202,17 @@ class displayEngine():
     self.statusMessages.insert( 0, ( m, time ) ) # list contains (string,time) tuples. Newest to head, pull from end
 
   def gameOver( self ):
-    self.addStatusMessage( "Game Over Man", time=100 )
-    self.newGameTimer = 100
+    self.addStatusMessage( "Game Over Man", time=200 )
+    self.newGameTimer = 300
 
   def update( self ):
     self.time += 1
 
     if self.newGameTimer > 0:
       self.newGameTimer -= 1
-    if self.newGameTimer == 1:
-      self.newGame()
-      return
+      if self.newGameTimer == 0:
+        self.newGame()
+        return
 
     # Collision detection
     numObjects = len( self.objects )

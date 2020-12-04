@@ -64,8 +64,8 @@ class Vector():
 
   # Add vector v
   def add( self, v ):
-    cx = self.dx() + v.magnitude * math.cos( v.direction )
-    cy = self.dy() - v.magnitude * math.sin( v.direction )
+    cx = self.dx() + v.dx() #v.magnitude * math.cos( v.direction )
+    cy = self.dy() + v.dy() #v.magnitude * math.sin( v.direction )
     magnitude = math.sqrt( cx ** 2 + cy ** 2 )
     direction = vec_dir( cx, cy )
     if self.maxLen:
@@ -74,6 +74,19 @@ class Vector():
     self.magnitude = magnitude
     self.direction = direction
 
+  def add2( self, v ):
+    cx = self.dx() + v.dx() #v.magnitude * math.cos( v.direction )
+    cy = self.dy() + v.dy() #v.magnitude * math.sin( v.direction )
+    print cx,cy
+    magnitude = math.sqrt( cx ** 2 + cy ** 2 )
+    direction = vec_dir( cx, cy )
+    if self.maxLen:
+      if self.magnitude > self.maxLen:
+        self.magnitude = self.maxLen
+    self.magnitude = magnitude
+    self.direction = direction
+    print self.direction
+
   def direction( self ):
     return self.direction
 
@@ -81,7 +94,7 @@ class Vector():
     return self.magnitude * math.cos( self.direction )
 
   def dy( self ):
-    return -self.magnitude * math.sin( self.direction )
+    return self.magnitude * math.sin( self.direction )
 
   def flipx( self ):
     self.direction = vec_dir( -self.dx(), self.dy() )
@@ -107,13 +120,13 @@ def vec_dir( dx, dy ):
   else:
     if math.fabs( dx ) < EFFECTIVE_ZERO:
       if dy > 0:
-        direction = -PI / 2
-      else:
         direction = PI / 2
+      else:
+        direction = -PI / 2
     elif dx > 0:
-      direction = math.atan( -dy / dx )
+      direction = math.atan( dy / dx )
     else:
-      direction = PI + math.atan( -dy / dx )
+      direction = PI + math.atan( dy / dx )
 
   return direction
 
@@ -131,7 +144,6 @@ Given a Camera at c and a point at p, compute the screen coordinates
 
 See projection.jpg
 '''
-
 def projection( c, p ):
   assert c.z > 1, "Camera in front of projection plane"
 
@@ -158,11 +170,22 @@ def projection( c, p ):
 
   return Point( xRaster, yRaster, 0 )
 
-# See if these two objects have collided. Objects must have a Point p indicating
+# See if these two objects have collided. Objects have a Point p indicating
 # their world position and a colRect tuple indicating the ( x left, y top, x right, y bottom )
 # collision rectangle in relative world coords to p. We assume constant Z and ignore.
-def collisionCheck( e, obj1, obj2 ):
+# Collision detection is done using screen coordinates since that's the player sees.
+# and may not correspond perfectly based on sprite shape.
 
+WarningFlag = True
+
+def collisionCheck( e, obj1, obj2 ):
+  global WarningFlag
+
+  if WarningFlag:
+    print "fix collisionCheck"
+    WarningFlag = False
+
+  # collision boxes in world coords
   l1x = obj1.p.x + obj1.colRect[ 0 ]
   l1y = obj1.p.y + obj1.colRect[ 1 ]
   r1x = obj1.p.x + obj1.colRect[ 2 ]
@@ -173,18 +196,34 @@ def collisionCheck( e, obj1, obj2 ):
   r2x = obj2.p.x + obj2.colRect[ 2 ]
   r2y = obj2.p.y + obj2.colRect[ 3 ]
 
+  if 0:
+    # calc collision boxes in screen coords
+    p = projection( e.camera, Point( l1x, l1y, obj1.p.z ) )
+    l1x = p.x
+    l1y = p.y
+    p = projection( e.camera, Point( r1x, r1y, obj1.p.z ) )
+    r1x = p.x
+    r1y = p.y
+
+    p = projection( e.camera, Point( l2x, l2y, obj2.p.z ) )
+    l2x = p.x
+    l2y = p.y
+    p = projection( e.camera, Point( r2x, r2y, obj2.p.z ) )
+    r2x = p.x
+    r2y = p.y
+
   if l1x >= r2x or l2x >= r1x or l1y <= r2y or l2y <= r1y:
     return False
   # Rectangles overlap.
 
   # Currently collisions that matter are
-  # 1) The chopper and an enemy weapon
-  # 2) A weapon from the chopper and an enemy
+  # 1) enemy weapon AND the chopper or city building
+  # 2) Chopprer weapon AND enemy vehicle or building
   #
-  # We don't care if two enemy vehicles collide, two friendly weapons collide, etc.
+  # We don't care if two enemy vehicles collide, two friendly weapons collide weapons collide..
 
   if obj1.oType == OBJECT_TYPE_NONE or obj2.oType == OBJECT_TYPE_NONE:
-    return False
+    return False # Smoke etc, don't want to interact.
 
   weapon = 0
   eWeapon = 0
@@ -198,7 +237,7 @@ def collisionCheck( e, obj1, obj2 ):
   if obj2.oType == OBJECT_TYPE_E_WEAPON:
     eWeapon += 1
 
-  if weapon == 2 or eWeapon == 2 or ( weapon == 0 and eWeapon == 0):
+  if weapon == 2 or eWeapon == 2 or ( weapon == 0 and eWeapon == 0 ):
     return False
 
   chopper = True if( obj1.oType == OBJECT_TYPE_CHOPPER or obj2.oType == OBJECT_TYPE_CHOPPER ) else False
@@ -215,8 +254,9 @@ def collisionCheck( e, obj1, obj2 ):
     return False
 
   isBuilding = True if( obj1.oType == OBJECT_TYPE_BUILDING or obj2.oType == OBJECT_TYPE_BUILDING ) else False
+  isEBuilding = True if( obj1.oType == OBJECT_TYPE_E_BUILDING or obj2.oType == OBJECT_TYPE_E_BUILDING ) else False
 
-  if weapon and isBuilding: # we don't bomb our own buildings
+  if( ( weapon and isBuilding ) or( eWeapon and isEBuilding ) ):
     return False
 
   return True
@@ -230,6 +270,22 @@ def displayColRect( e, o ): # Display the projection of the collision rectangle 
   p1 = projection( e.camera, Point( l1x, l1y, o.p.z ) )
   p2 = projection( e.camera, Point( r1x, r1y, o.p.z ) )
   e.canvas.create_rectangle( p1.x, p1.y, p2.x, p2.y, outline="orange" )
+
+# Horizontal distance to the nearest object of type oType
+# + means it's in the +x direction, neg means -x direction
+def distanceToObjectType( e, xPos, oType ):
+
+  d = None
+
+  for o in e.objects:
+    if o.oType == oType:
+      dis = o.p.x - xPos
+      if not d:
+        d = dis
+      elif math.fabs( dis ) < math.fabs( d ):
+        d = dis
+
+  return d
 
 class dbgPoint(): # Debug point
   def __init__( self, p ):

@@ -106,7 +106,6 @@ class HillImg():
     if not HillImg.image:
       img = Image.open( "images/backgrounds/Mountains2.gif" )
       img = img.resize( ( 4000, 150 ) )
-
       HillImg.image = ImageTk.PhotoImage( img )
 
   def draw( self, e, p ):
@@ -114,22 +113,55 @@ class HillImg():
     e.canvas.create_image( p.x, p.y - 40, image=HillImg.image )
 
 class Cloud():
-  image = None
+  images = []
+  ud_index = 0
+  offset = [ 50, 25, 12 ]
 
   def __init__( self, x, y, z ):
-    self.p = Point( x, y, z )
     self.oType = OBJECT_TYPE_NONE
+    self.p = Point( x, y, z )
+    self.colRect = ( -3, 3, 3, 0 )
 
-    if not Cloud.image:
+    if z < HORIZON_DISTANCE / 5:
+      self.imgIx = 0
+    elif z < HORIZON_DISTANCE / 3:
+      self.imgIx = 1
+    else:
+      self.imgIx = 2
+
+    print self.imgIx
+
+    Cloud.ud_index += 1
+    self.checkTimer = Cloud.ud_index # Just to stagger the checks.
+
+    if not Cloud.images:
       img = Image.open( "images/backgrounds/cloud.gif" )
-      Cloud.image = ImageTk.PhotoImage( img )
+      Cloud.images.append( ImageTk.PhotoImage( img ) )
+      img2 = img.resize( ( 200, 100 ) )
+      Cloud.images.append( ImageTk.PhotoImage( img2 ) )
+      img2 = img.resize( ( 100, 50 ) )
+      Cloud.images.append( ImageTk.PhotoImage( img2 ) )
+
+  def update( self, e ):
+    self.p.x -= 1
+
+    self.checkTimer -= 1
+    if self.checkTimer == 0:
+      self.checkTimer = 20
+      p = projection( e.camera, self.p )
+      if p.x < -500: # Way off screen, move to the right of the screen
+        self.p.z = random.randint( HORIZON_DISTANCE / 20, HORIZON_DISTANCE / 4 )
+        foundX = False
+        self.p.x = MAX_WORLD_X
+        while not foundX:
+          self.p.x += 100  # Move right until it doesn't show up on screen
+          pTry = projection( e.camera, self.p )
+          if pTry.x > SCREEN_WIDTH + 250:
+            foundX = True
+      return True
 
   def draw( self, e, p ):
-    self.p.x -= .5 # This is bad but.. it's background object so we don't call update..
-    if self.p.x < MIN_WORLD_X - 1000:
-      self.p.x = MAX_WORLD_X + 500
-
-    e.canvas.create_image( p.x, p.y, image=Cloud.image )
+    e.canvas.create_image( p.x, p.y - Cloud.offset[ self.imgIx ], image=Cloud.images[ self.imgIx ] )
 
 class Rock():
   image = None
@@ -180,11 +212,11 @@ class Tree():
       rs_img = img.resize( ( 32, 39 ) )
       Tree.images.append( ImageTk.PhotoImage( rs_img ) )
 
-    if self.p.z > 250:
+    if z > 250: # far away? Use small sprite
       self.imgIndex = 3
-    elif self.p.z > 125:
+    elif z > 50: # medium distance?
       self.imgIndex = 2
-    else:
+    else: # close
       self.imgIndex = random.randint( 0, 2 ) # two bigger gifs..
 
   def draw( self, e, p ):
@@ -250,7 +282,7 @@ class CityBuildings():
   numBuildings = len( imgInfo )
 
   def __init__( self, x, b, label=None ):
-    self.p = Point( x, 0, 3 )
+    self.p = Point( x, 0, 2 )
     self.label = label
     self.b = b
     self.oType = OBJECT_TYPE_BUILDING
@@ -268,7 +300,7 @@ class CityBuildings():
                            imgParams[ 2 ],
                            imgParams[ 1 ] + imgParams[ 3 ],
                            imgParams[ 2 ] + imgParams[ 4 ] ) )
-        crop = crop.resize( ( imgParams[ 3 ], imgParams[ 4 ] ) )
+        crop = crop.resize( ( int( imgParams[ 3 ] * 1.2 ), int( imgParams[ 4 ] * 1.2 ) ) )
 
         imgParams[ 0 ] = ImageTk.PhotoImage( crop )
 
@@ -299,7 +331,7 @@ def buildCity( e, x, bCount, label=None ):
     e.objects.append( CityBuildings( x, ix, label=label ) )
     x += CityBuildings.imgInfo[ ix ][ 3 ] / 20
 
-class Building(): # from miscBuildings.gif
+class EBuilding(): # from miscBuildings.gif
   imgInfo = \
   [
     # First row
@@ -339,26 +371,25 @@ class Building(): # from miscBuildings.gif
   def __init__( self, x, b, label=None ):
     self.oType = OBJECT_TYPE_E_BUILDING
     self.p = Point( x, 0, 3 )
-    self.colRect = ( -Building.imgInfo[ b ][ 3 ] / 30,
-                      Building.imgInfo[ b ][ 4 ] / 10,
-                      Building.imgInfo[ b ][ 3 ] / 30,
+    self.colRect = ( -EBuilding.imgInfo[ b ][ 3 ] / 30,
+                      EBuilding.imgInfo[ b ][ 4 ] / 10,
+                      EBuilding.imgInfo[ b ][ 3 ] / 30,
                       0 )
     self.label = label
     self.b = b
-    self.si = SI_BUILDING
+    self.si = SI_E_BUILDING
     self.points = POINTS_E_BUILDING
     self.showSICount = 0
 
-    if not Building.imgInfo[ 0 ][ 0 ]: # If PhotoImage is None we haven't loaded yet
+    if not EBuilding.imgInfo[ 0 ][ 0 ]: # If PhotoImage is None we haven't loaded yet
       img = Image.open( "images/backgrounds/miscBuildings.gif" )
 
-      for imgParams in Building.imgInfo:
+      for imgParams in EBuilding.imgInfo:
         crop = img.crop( ( imgParams[ 1 ],
                            imgParams[ 2 ],
                            imgParams[ 1 ] + imgParams[ 3 ],
                            imgParams[ 2 ] + imgParams[ 4 ] ) )
         crop = crop.resize( ( imgParams[ 3 ] * 2, imgParams[ 4 ] * 2 ) )
-
         imgParams[ 0 ] = ImageTk.PhotoImage( crop )
 
   def processMessage( self, e, message, param=None ):
@@ -376,26 +407,27 @@ class Building(): # from miscBuildings.gif
     return True
 
   def draw( self, e, p ):
-    sb = Building.imgInfo[ self.b ] # Sprite info shortcut.
+    sb = EBuilding.imgInfo[ self.b ] # Sprite info shortcut.
+
+    if self.label:
+      e.canvas.create_text( p.x, p.y + 10, text=self.label, fill='black' )
+
     p.y -= sb[ 4 ]
     e.canvas.create_image( p.x, p.y, image=sb[ 0 ] )
 
     if self.showSICount > 0:
       self.showSICount -= 1
       e.canvas.create_rectangle( p.x - 20, p.y + 5,
-                                 p.x + 20, p.y + 7, fill="red" )
+                                 p.x + 20, p.y + 7,
+                                 fill="red" )
       e.canvas.create_rectangle( p.x - 20, p.y + 5,
-                                 p.x - 20 + 40.0 * self.si / SI_BUILDING, p.y + 7, fill="green" )
-    elif self.label:
-      e.canvas.create_text( p.x, p.y - 10, text=self.label, fill='black' )
+                                 p.x - 20 + 40.0 * self.si / SI_E_BUILDING, p.y + 7,
+                                 fill="green" )
 
-
-def buildBase( e, x, bCount, label=None ):
-  assert( bCount >= 2 and bCount < Building.numBuildings )
+def buildEBase( e, x, bCount, label=None ):
+  assert( bCount >= 2 and bCount < EBuilding.numBuildings )
 
   for b in range( 0, bCount ):
-    ix = random.randint( 0, Building.numBuildings - 1 )
-    e.objects.append( Building( x, ix, label=label ) )
-    x += Building.imgInfo[ ix ][ 3 ] / 10 # adjust pixels to world coors.
-
-
+    ix = random.randint( 0, EBuilding.numBuildings - 1 )
+    e.objects.append( EBuilding( x, ix, label="Enemy" ) )
+    x += EBuilding.imgInfo[ ix ][ 3 ] / 10 # adjust pixels to world coors.
