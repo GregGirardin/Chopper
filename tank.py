@@ -190,9 +190,6 @@ class Tank():
         self.direction = DIRECTION_LEFT
 
     self.p.move( self.v )
-    if self.p.x < MIN_WORLD_X or self.p.x > MAX_WORLD_X:
-      self.v.flipx()
-
     return True
 
   def draw( self, e, p ):

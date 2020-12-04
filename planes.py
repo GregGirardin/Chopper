@@ -50,21 +50,21 @@ class Bomber1():
 
     if self.p.x < MIN_WORLD_X - 50:
       self.target_y = random.randint( 50, 100 )
-      self.v.flipx()
+      self.v = Vector( 0, BOMBER1_DELTA )
     elif self.p.x > MAX_WORLD_X + 50:
       if e.cityDestroyed:
         e.addStatusMessage( "Bomber Left Theater" )
         e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
         return False
       self.target_y = random.randint( 15, 25 )
-      self.v.flipx()
+      self.v = Vector( PI, BOMBER1_DELTA )
       self.bombs = 1
 
     if not e.time % 10: # don't need to do this every cycle.
       if self.bombs:  # See if there's a target
         for o in e.objects:
           if o.oType == OBJECT_TYPE_BUILDING:
-            if( math.fabs( o.p.x - self.p.x ) < 5 ):
+            if( math.fabs( o.p.x - self.p.x ) < 10 ):
               e.addObject( Bomb( self.p, self.v, oType=OBJECT_TYPE_E_WEAPON ) )
               self.bombs -= 1
               break
@@ -130,21 +130,21 @@ class Bomber2():
 
     if self.p.x < MIN_WORLD_X - 50:
       self.target_y = random.randint( 50, 75 )
-      self.v.flipx()
+      self.v = Vector( 0, BOMBER2_DELTA )
     elif self.p.x > MAX_WORLD_X + 50:
       if e.cityDestroyed:
         e.addStatusMessage( "Bomber Left Theater" )
         e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
         return False
       self.target_y = random.randint( 10, 25 )
-      self.v.flipx()
+      self.v = Vector( PI, BOMBER2_DELTA )
       self.bombs = 1
 
     if not e.time % 10: # don't need to do this every cycle.
       if self.bombs:  # See if there's a target
         for o in e.objects:
           if o.oType == OBJECT_TYPE_BUILDING:
-            if( math.fabs( o.p.x - self.p.x ) < 5 ):
+            if( math.fabs( o.p.x - self.p.x ) < 10 ):
               e.addObject( Bomb( self.p, self.v, oType=OBJECT_TYPE_E_WEAPON ) )
               self.bombs -= 1
               break

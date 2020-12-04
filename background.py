@@ -129,8 +129,6 @@ class Cloud():
     else:
       self.imgIx = 2
 
-    print self.imgIx
-
     Cloud.ud_index += 1
     self.checkTimer = Cloud.ud_index # Just to stagger the checks.
 
@@ -150,7 +148,6 @@ class Cloud():
       self.checkTimer = 20
       p = projection( e.camera, self.p )
       if p.x < -500: # Way off screen, move to the right of the screen
-        self.p.z = random.randint( HORIZON_DISTANCE / 20, HORIZON_DISTANCE / 4 )
         foundX = False
         self.p.x = MAX_WORLD_X
         while not foundX:

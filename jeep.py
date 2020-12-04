@@ -85,14 +85,14 @@ class Jeep():
     if self.p.x < MIN_WORLD_X:
       e.qMessage( MSG_SOLDIERS_TO_CITY, self.soldiers )
       self.soldiers = 0
-      self.v.flipx()
+      self.v = Vector( 0, JEEP_DELTA )
     elif self.p.x > MAX_WORLD_X + 100:
       if e.cityDestroyed == True:
         e.addStatusMessage( "Jeep Left Theater" )
         e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
         return False
       self.soldiers = JEEP_SOLDIERS
-      self.v.flipx()
+      self.v = Vector( PI, JEEP_DELTA )
 
     self.p.move( self.v )
 
@@ -172,14 +172,15 @@ class Transport1():
     if self.p.x < MIN_WORLD_X:
       e.qMessage( MSG_SOLDIERS_TO_CITY, self.soldiers )
       self.soldiers = 0
-      self.v.flipx()
+      self.v = Vector( 0, TRANSPORT1_DELTA )
+
     elif self.p.x > MAX_WORLD_X + 100:
       if e.cityDestroyed == True:
         e.addStatusMessage( "Transport Left Theater" )
         e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
         return False
       self.soldiers = T1_SOLDIERS
-      self.v.flipx()
+      self.v = Vector( PI, TRANSPORT1_DELTA )
 
     self.p.move( self.v )
     return True
@@ -255,15 +256,14 @@ class Transport2():
     if self.p.x < MIN_WORLD_X:
       e.qMessage( MSG_SOLDIERS_TO_CITY, self.soldiers )
       self.soldiers = 0
-      self.v.flipx()
+      self.v = Vector( 0, TRANSPORT2_DELTA )
     elif self.p.x > MAX_WORLD_X + 100:
       if e.cityDestroyed == True:
         e.addStatusMessage( "Transport Left Theater" )
         e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
         return False
       self.soldiers = T2_SOLDIERS
-      self.v.flipx()
-
+      self.v = Vector( PI, TRANSPORT2_DELTA )
     self.p.move( self.v )
 
     return True
@@ -316,6 +316,7 @@ class Truck():
         self.si -= param.wDamage
         if self.si < 0:
           e.addObject( BombExplosion( self.p ) )
+
   # Draw wheels with circles instead of using sprites.
   def drawWheel( self, c, x, y, radius, angle ):
     c.create_oval( x - radius, y - radius, x + radius, y + radius, fill="#111" )
@@ -341,14 +342,14 @@ class Truck():
     if self.p.x < MIN_WORLD_X:
       e.qMessage( MSG_SOLDIERS_TO_CITY, self.soldiers )
       self.soldiers = 0
-      self.v.flipx()
+      self.v = Vector( 0, TRUCK_DELTA )
     elif self.p.x > MAX_WORLD_X + 100:
       if e.cityDestroyed == True:
         e.addStatusMessage( "Truck Left Theater" )
         e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
         return False
       self.soldiers = TRUCK_SOLDIERS
-      self.v.flipx()
+      self.v = Vector( PI, TRUCK_DELTA )
 
     self.p.move( self.v )
 

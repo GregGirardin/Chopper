@@ -73,7 +73,7 @@ class displayEngine():
         self.addStatusMessage( "Enemy Base Destroyed" )
 
     elif m == MSG_ENEMY_LEFT_BATTLEFIELD:
-      # see if it's the last one.
+      # See if it's the last one.
       self.modScore( param.points )
       anyEnemies = False
       for o in self.objects:
@@ -198,7 +198,7 @@ class displayEngine():
     self.objects.sort( key=increaseZ )
 
   # Q's a status message to be displayed at the center of the screen.
-  def addStatusMessage( self, m, time=50 ):
+  def addStatusMessage( self, m, time=25 ):
     self.statusMessages.insert( 0, ( m, time ) ) # list contains (string,time) tuples. Newest to head, pull from end
 
   def gameOver( self ):
@@ -254,16 +254,18 @@ class displayEngine():
       self.__processMessage__( m[ 0 ], m[ 1 ] )
 
   def draw( self ):
+    SCREEN_PAD = 500
+
     self.canvas.delete( ALL )
     for o in self.bg_objects:
       p = projection( self.camera, o.p )
-      if p.x < SCREEN_WIDTH + 500 and p.x > -500:
+      if p.x < SCREEN_WIDTH + SCREEN_PAD and p.x > -SCREEN_PAD:
         o.draw( self, p )
         if self.debugCoords:
           e.canvas.create_rectangle( p.x - 1, p.y - 1, p.x + 1, p.y + 1, outline="red" )
     for o in self.objects:
       p = projection( self.camera, o.p )
-      if p.x < SCREEN_WIDTH + 500 and p.x > -500:
+      if p.x < SCREEN_WIDTH + SCREEN_PAD and p.x > -SCREEN_PAD:
         o.draw( self, p )
         if self.debugCoords:
           e.canvas.create_rectangle( p.x - 1, p.y - 1, p.x + 1, p.y + 1, outline="red" )

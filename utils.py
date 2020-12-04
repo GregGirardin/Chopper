@@ -74,19 +74,6 @@ class Vector():
     self.magnitude = magnitude
     self.direction = direction
 
-  def add2( self, v ):
-    cx = self.dx() + v.dx() #v.magnitude * math.cos( v.direction )
-    cy = self.dy() + v.dy() #v.magnitude * math.sin( v.direction )
-    print cx,cy
-    magnitude = math.sqrt( cx ** 2 + cy ** 2 )
-    direction = vec_dir( cx, cy )
-    if self.maxLen:
-      if self.magnitude > self.maxLen:
-        self.magnitude = self.maxLen
-    self.magnitude = magnitude
-    self.direction = direction
-    print self.direction
-
   def direction( self ):
     return self.direction
 

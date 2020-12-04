@@ -9,61 +9,23 @@ MIN_WORLD_X = -50
 MAX_WORLD_X = 500
 
 NUM_CHOPPERS = 3
-NUM_CITY_BUILDINGS = 5
-NUM_E_BASE_BUILDINGS = 5
-
+NUM_CITY_BUILDINGS = 2
+NUM_E_BASE_BUILDINGS = 2
 NUM_LEVELS = 5
-SHOW_SI_COUNT = 50 # How long to show an enemies structural integrity in "loops"
-HORIZON_DISTANCE = 10000
 
-MAX_MTN_WIDTH = 500
-MAX_MTN_HEIGHT = 200
-MAX_MTN_DISTANCE = HORIZON_DISTANCE / 4
-MTN_PER_LAYER = 10
+# World geometry
+HORIZON_DISTANCE = 10000
 
 CAM_FOV_X = 45.0/360.0 * 6.28
 CAM_FOV_Y = 30.0/360.0 * 6.28
 CAM_Z = 100 # Distance behind projection plane, NOTE: should be negative in theory.
 
-# Helo stuff
-ROTOR_STOP = 0
-ROTOR_SLOW = 1
-ROTOR_FAST = 2
-
-MAX_ALTITUDE = 100
 DISPLAY_CONTROL_TIME = 30 # How may frames to display the control "stick" position after movement
 
-# What's the desired X velocity? We have to accelerate to it.
-TGT_VEL_STOP       =  0 # facing fwd
-TGT_VEL_LEFT_STOP  = -1 # stopped facing left
-TGT_VEL_LEFT_SLOW  = -2
-TGT_VEL_LEFT_FAST  = -3
-TGT_VEL_RIGHT_STOP =  1
-TGT_VEL_RIGHT_SLOW =  2
-TGT_VEL_RIGHT_FAST =  3
-
-# What's the desired Y velocity
-TGT_VEL_UP_SLOW = 1
-TGT_VEL_UP_FAST = 2
-TGT_VEL_DN_SLOW = -1
-TGT_VEL_DN_FAST = -2
-
-# Chopper body angle
-ANGLE_0   = 0 # level
-ANGLE_U5  = 1 # Up 5 degrees for slowing down
-ANGLE_D5  = 2 # Down 5
-ANGLE_D10 = 3 # Down 10
-
-WEAPON_NONE = 0
-WEAPON_SMALL_MISSILE = 1
-WEAPON_LARGE_MISSILE = 2
-WEAPON_BOMB = 3
-WEAPON_BULLET = 4
-
 BULLET_LIFETIME = 100
+SHOW_SI_COUNT = 50 # How long to show an enemies structural integrity in "loops"
 
 # Messages to objects
-
 # From UI to chopper
 MSG_ACCEL_L           = 0
 MSG_ACCEL_R           = 1

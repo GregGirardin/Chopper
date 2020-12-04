@@ -4,6 +4,38 @@ from utils import *
 from PIL import ImageTk, Image
 from missiles import *
 
+# Chopper body angle
+ANGLE_0   = 0 # level
+ANGLE_U5  = 1 # Up 5 degrees for slowing down
+ANGLE_D5  = 2 # Down 5
+ANGLE_D10 = 3 # Down 10
+
+WEAPON_NONE = 0
+WEAPON_SMALL_MISSILE = 1
+WEAPON_LARGE_MISSILE = 2
+WEAPON_BOMB = 3
+WEAPON_BULLET = 4
+
+ROTOR_STOP = 0
+ROTOR_SLOW = 1
+ROTOR_FAST = 2
+MAX_ALTITUDE = 100
+
+# What's the desired X velocity? We have to accelerate to it.
+TGT_VEL_STOP       =  0 # facing fwd
+TGT_VEL_LEFT_STOP  = -1 # stopped facing left
+TGT_VEL_LEFT_SLOW  = -2
+TGT_VEL_LEFT_FAST  = -3
+TGT_VEL_RIGHT_STOP =  1
+TGT_VEL_RIGHT_SLOW =  2
+TGT_VEL_RIGHT_FAST =  3
+
+# What's the desired Y velocity
+TGT_VEL_UP_SLOW = 1
+TGT_VEL_UP_FAST = 2
+TGT_VEL_DN_SLOW = -1
+TGT_VEL_DN_FAST = -2
+
 class Helicopter():
   heloImages = {}
 
