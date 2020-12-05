@@ -278,19 +278,15 @@ class CityBuildings():
     self.b = b
     self.oType = OBJECT_TYPE_BUILDING
     self.si = SI_BUILDING
-    self.colRect = ( -CityBuildings.imgInfo[ b ][ 3 ] / 40,
-                      CityBuildings.imgInfo[ b ][ 4 ] / 20,
-                      CityBuildings.imgInfo[ b ][ 3 ] / 40,
-                      0 )
+    self.colRect = ( -CityBuildings.imgInfo[ b ][ 3 ] / 40, CityBuildings.imgInfo[ b ][ 4 ] / 15,
+                      CityBuildings.imgInfo[ b ][ 3 ] / 40, 0 )
 
-    if not CityBuildings.imgInfo[ 0 ][ 0 ]: # If PhotoImage is None we haven't loaded yet
+    if not CityBuildings.imgInfo[ 0 ][ 0 ]:
       img = Image.open( "images/backgrounds/miscCity.gif" )
 
       for imgParams in CityBuildings.imgInfo:
-        crop = img.crop( ( imgParams[ 1 ],
-                           imgParams[ 2 ],
-                           imgParams[ 1 ] + imgParams[ 3 ],
-                           imgParams[ 2 ] + imgParams[ 4 ] ) )
+        crop = img.crop( ( imgParams[ 1 ], imgParams[ 2 ],
+                           imgParams[ 1 ] + imgParams[ 3 ], imgParams[ 2 ] + imgParams[ 4 ] ) )
         crop = crop.resize( ( int( imgParams[ 3 ] * 1.2 ), int( imgParams[ 4 ] * 1.2 ) ) )
 
         imgParams[ 0 ] = ImageTk.PhotoImage( crop )
@@ -351,7 +347,6 @@ class EBuilding(): # from miscBuildings.gif
     [ None, 518, 197,  93, 62 ],
     [ None, 619, 208,  95, 51 ],
     [ None, 715, 208,  68, 51 ],
-    # Row 4
     # Row 6
     [ None,   4, 427, 120, 47 ],
     [ None, 128, 429, 122, 45 ],
@@ -368,12 +363,11 @@ class EBuilding(): # from miscBuildings.gif
                       0 )
     self.label = label
     self.b = b
-    self.si = SI_E_BUILDING
-    self.siMax = SI_E_BUILDING
+    self.si =  self.siMax = SI_E_BUILDING
     self.points = POINTS_E_BUILDING
     self.showSICount = 0
 
-    if not EBuilding.imgInfo[ 0 ][ 0 ]: # If PhotoImage is None we haven't loaded yet
+    if not EBuilding.imgInfo[ 0 ][ 0 ]:
       img = Image.open( "images/backgrounds/miscBuildings.gif" )
 
       for imgParams in EBuilding.imgInfo:
@@ -403,10 +397,8 @@ class EBuilding(): # from miscBuildings.gif
 
     if self.label:
       e.canvas.create_text( p.x, p.y + 10, text=self.label, fill='black' )
-
     p.y -= sb[ 4 ]
     e.canvas.create_image( p.x, p.y, image=sb[ 0 ] )
-
     showSI( e.canvas, p, self )
 
 def buildEBase( e, x, bCount, label=None ):

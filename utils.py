@@ -274,7 +274,8 @@ def distanceToObjectType( e, xPos, oType ):
 
   return d
 
-# object has showSICount, si and siMax
+# object has .showSICount, .si and .siMax
+# .showSICount is mutated.
 def showSI( c, p, o ):
   if o.showSICount > 0:
     o.showSICount -= 1

@@ -21,13 +21,14 @@ class displayEngine():
     self.canvas = Canvas( self.root, width=SCREEN_WIDTH, height=SCREEN_HEIGHT )
     self.canvas.pack()
 
-    self.debugCoords = False # Show x,y and collision box
+    #self.debugCoords = True # Show x,y and collision box
+    self.debugCoords = False
     self.chopper = None
     self.highScore = 0
     self.statusMessages = []
     self.statusMsgTime = 0
     self.statusMsgCurrent = None
-    self.msgQ = [] # Q of messages to the engine. Loosely couple msg processing.
+    self.msgQ = [] # Q of messages to loosely couple messaging
     self.newGameTimer = 0
     self.currentCamOff = -20 # Start from the left initially to show the City
     self.newGame()
@@ -38,6 +39,7 @@ class displayEngine():
     self.score = 0
     self.numChoppers = NUM_CHOPPERS
     self.newLevel()
+    self.fadeInCount = 0
 
   # This is called from objects probably in the context of update()
   # Take actions later in processMessage() after all update()s have been called.
@@ -92,6 +94,7 @@ class displayEngine():
         self.currentCamOff = self.chopper.p.x # So the camera pans from where we are back to base.
         self.chopper = Helicopter( 0, 0, 1 )
         self.objects.append( self.chopper )
+        self.fadeInCount = 0
 
     elif m == MSG_SPAWNING_COMPLETE:
       self.spawningComplete = True
@@ -99,7 +102,7 @@ class displayEngine():
     elif m == MSG_SOLDIERS_TO_CITY:
       if not self.cityDestroyed:
         self.addStatusMessage( "Casualties!" )
-        self.modScore( -param )
+        self.modScore( -param * 5 )
 
     elif m == MSG_MISSION_COMPLETE:
       self.addStatusMessage( "Level Complete." )
@@ -135,6 +138,7 @@ class displayEngine():
     self.spawningComplete = False
     self.allEnemiesDestroyed = False
     self.cityDestroyed = False
+    self.fadeInCount = 0
 
     self.missionComplete = False # Just need to return to base to finish level.
     self.levelComplete = False
@@ -171,8 +175,6 @@ class displayEngine():
 
     # Base - active, update replenishes resources
     self.objects.append( Base( 0, 0, 2, label="Base" ) )
-
-    # Active objects. We call update() and check for collisions
 
     # Create the Chopper
     self.chopper = Helicopter( 0, 0, 1 )
@@ -284,6 +286,11 @@ class displayEngine():
     e.canvas.create_text( SCREEN_WIDTH / 2, 10, text=t )
     t = "High Score %s" % self.highScore
     e.canvas.create_text( SCREEN_WIDTH / 2, 25, text=t )
+
+    if self.fadeInCount < SCREEN_HEIGHT / 2:
+      self.fadeInCount += 20
+      e.canvas.create_rectangle( 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT / 2 - self.fadeInCount, fill="black" )
+      e.canvas.create_rectangle( 0, SCREEN_HEIGHT / 2 + self.fadeInCount, SCREEN_WIDTH, SCREEN_HEIGHT, fill="black" )
     self.root.update()
 
 def leftHandler( event ):

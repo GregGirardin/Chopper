@@ -19,8 +19,7 @@ class Jeep():
     self.imgIx = 0
     self.bounceCount = 0
     self.v = v if v else Vector( PI, JEEP_DELTA )
-    self.si = SI_JEEP
-    self.siMax = SI_JEEP
+    self.si = self.siMax = SI_JEEP
     self.points = POINTS_JEEP
     self.showSICount = 0
     self.soldiers = JEEP_SOLDIERS
@@ -118,8 +117,7 @@ class Transport1():
     self.colRect = ( -5, 3, 5, 0 )
     self.bounceCount = 0
     self.v = v if v else Vector( PI, TRANSPORT1_DELTA )
-    self.si = SI_TRANSPORT1
-    self.siMax = SI_TRANSPORT1
+    self.si = self.siMax = SI_TRANSPORT1
 
     self.points = POINTS_TRANSPORT
     self.showSICount = 0
@@ -203,8 +201,7 @@ class Transport2():
     self.colRect = ( -5, 3, 5, 0 )
     self.bounceCount = 0
     self.v = v if v else Vector( PI, TRANSPORT2_DELTA )
-    self.si = SI_TRANSPORT2
-    self.siMax = SI_TRANSPORT2
+    self.si = self.siMax = SI_TRANSPORT2
     self.points = POINTS_TRANSPORT
     self.showSICount = 0
     self.soldiers = T2_SOLDIERS
@@ -284,8 +281,7 @@ class Truck():
     self.colRect = ( -3, 2.5, 3, 0 )
     self.bounceCount = 0
     self.v = v if v else Vector( PI, TRUCK_DELTA )
-    self.si = SI_TRUCK
-    self.siMax = SI_TRUCK
+    self.si = self.siMax = SI_TRUCK
     self.points = POINTS_TRUCK
     self.showSICount = 0
     self.soldiers = TRUCK_SOLDIERS

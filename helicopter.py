@@ -45,7 +45,6 @@ class Helicopter():
     self.p = Point( x, y, z )
     self.onGround = False
     self.rotorSpeed = ROTOR_SLOW
-    self.fuel = 100.0
     self.rotorTheta = 0.0
     self.loadImages()
     self.vx = 0.0
@@ -192,20 +191,22 @@ class Helicopter():
     if self.bulletRdyCounter > 0:
       self.bulletRdyCounter -= 1
 
+    '''
     # Fuel consumption
     if self.p.y > 0.0:
-      self.fuel -= .01
+      self.curAmount[ RESOURCE_FUEL ] -= .02
       if self.vx != 0:
-        self.fuel -= math.fabs( self.vx ) * .01
-    if self.fuel <= 0.0:
+        self.curAmount[ RESOURCE_FUEL ] -= math.fabs( self.vx ) * .01
+    if self.curAmount[ RESOURCE_FUEL ] <= 0.0:
       if self.p.y > 0.0:
         self.vy -= .05
         self.vx *= .95
       else:
-        self.fuel = 0
+        self.curAmount[ RESOURCE_FUEL ] = 0
         self.rotorTheta = 0
+    '''
 
-    if self.fuel > 0.0:
+    if 1: # self.curAmount[ RESOURCE_FUEL ] > 0.0:
       # Spin the rotors
       self.rotorTheta -= self.rotorSpeed / 4.0
       if self.rotorTheta < 0:
@@ -297,7 +298,6 @@ class Helicopter():
 
     # Determine sprite and the corresponding rotor positions
     bodyAngle = ANGLE_0
-    #self.chopperDir = DIRECTION_FORWARD
     targVel = self.tgtXVelDict[ self.tgtXVelocity ]
 
     if self.p.y != 0: # We're not on the ground
@@ -466,11 +466,11 @@ class Helicopter():
                             width=3 )
 
     # Fuel level
-    e.canvas.create_rectangle( 10, 10, 10 + 100.0 * 2, 15, fill="red" )
-    e.canvas.create_rectangle( 10, 10, 10 + self.fuel * 2, 15, fill="green" )
+    #e.canvas.create_rectangle( 10, 10, 10 + 100.0 * 2, 15, fill="red" )
+    #e.canvas.create_rectangle( 10, 10, 10 + self.curAmount[ RESOURCE_FUEL ] * 2, 15, fill="green" )
     # Structural integrity
-    e.canvas.create_rectangle( 10, 15, 10 + 200, 20, fill="red" )
-    e.canvas.create_rectangle( 10, 15, int( 10 + self.curAmount[ RESOURCE_SI ] * 200/SI_CHOPPER ), 20, fill="green" )
+    e.canvas.create_rectangle( 10, 10, 10 + 200, 15, fill="red" )
+    e.canvas.create_rectangle( 10, 10, int( 10 + self.curAmount[ RESOURCE_SI ] * 200/SI_CHOPPER ), 15, fill="green" )
     # Number of weapons
     for i in range( 0, int( self.curAmount[ RESOURCE_SM ] ) ):
       e.canvas.create_image( 10, 50 + 6 * i, image=self.missileSImg )

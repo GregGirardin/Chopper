@@ -15,8 +15,7 @@ class Bomber1():
     self.p = Point( p.x, p.y, p.z )
     self.colRect = ( -6, 2, 6, 0 )
     self.v = copy( v ) if v else Vector( PI, BOMBER1_DELTA )
-    self.si = SI_BOMBER1
-    self.siMax = SI_BOMBER1
+    self.si = self.siMax = SI_BOMBER1
     self.points = POINTS_BOMBER
     self.bombs = 2
     self.target_y = p.y
@@ -171,8 +170,7 @@ class Fighter():
     self.colRect = ( -2, 2, 2, .5 )
     self.v = v if v else vecFromComps( -FIGHTER_DELTA, 0 )
     self.nextMissile = 200
-    self.si = SI_FIGHTER
-    self.siMax = SI_FIGHTER
+    self.si = self.siMax = SI_FIGHTER
     self.points = POINTS_FIGHTER
     self.target_y = p.y
     self.showSICount = 0

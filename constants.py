@@ -99,16 +99,16 @@ WEAPON_DAMAGE_BOMB      = 100.0
 # Initial structural integrity, "health"
 SI_CHOPPER    = 20.0 # The player
 
-SI_JEEP       = 10.0
+SI_JEEP       = 15.0
 SI_TRUCK      = 15.0
-SI_TRANSPORT1 = 20.0
-SI_TRANSPORT2 = 25.0
-SI_TANK       = 90.0
+SI_TRANSPORT1 = 40.0
+SI_TRANSPORT2 = 60.0
+SI_TANK       = 150.0
 SI_FIGHTER    = 15.0
-SI_BOMBER1    = 60.0
+SI_BOMBER1    = 70.0
 SI_BOMBER2    = 30.0
-SI_BUILDING   = 40.0
-SI_E_BUILDING = 20.0
+SI_BUILDING   = 50.0
+SI_E_BUILDING = 50.0
 
 # points
 POINTS_JEEP = 5

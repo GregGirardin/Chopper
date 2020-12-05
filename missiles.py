@@ -168,7 +168,7 @@ class Bomb():
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
       self.active = False
-      e.addObject( BombExplosion( self.p ) )
+      e.addObject( Explosion( self.p ) )
 
   def update( self, e ):
     if self.active == False:

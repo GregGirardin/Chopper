@@ -24,8 +24,7 @@ class Tank():
     self.p = Point( p.x, p.y, p.z )
     self.cannonAngle = 0 # 0 - 3
     self.colRect = ( -4, 4, 4, 0 )
-    self.si = SI_TANK
-    self.siMax = SI_TANK
+    self.si = self.siMax = SI_TANK
     self.points = POINTS_TANK
     self.showSICount = 0
     self.state = TANK_STATE_MOVE_TO_ATK
