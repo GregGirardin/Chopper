@@ -39,7 +39,6 @@ class Tank():
       for x in range( 0, 2 ):
         crop = img.crop( ( x * SW, 0, x * SW + SW, SH ) )
         crop = crop.resize( ( 192, 96 ) ) # 3/4 scale
-
         Tank.tankImages.append( ImageTk.PhotoImage( crop ) )
 
       coords = ( ( ( 1, 0 ), ( 0, 0 ), ( 1, 1 ), ( 1, 1 ) ),
@@ -54,7 +53,6 @@ class Tank():
                               c[ 0 ] * SW / 2 + SW / 2 - 5,
                               c[ 1 ] * SH / 2 + SH / 2 - 5 ) )
           crop = crop.resize( ( 96 , 48 ) )
-
           crop = ImageTk.PhotoImage( crop )
           images.append( crop )
         Tank.cannonImages.append( images )
@@ -114,12 +112,10 @@ class Tank():
 
           if self.direction == DIRECTION_RIGHT:
             e.addObject( Bullet( Point( self.p.x + 5, self.p.y + 2, self.p.z ),
-                                 Vector( angle, BULLET_DELTA ),
-                                 oType=OBJECT_TYPE_E_WEAPON, wDamage=10 ) )
+                                 Vector( angle, BULLET_DELTA ), oType=OBJECT_TYPE_E_WEAPON, wDamage=10 ) )
           else:
             e.addObject( Bullet( Point( self.p.x - 5, self.p.y + 2, self.p.z ),
-                                 Vector( ( PI - angle ), BULLET_DELTA ),
-                                 oType=OBJECT_TYPE_E_WEAPON, wDamage=10 ) )
+                                 Vector( ( PI - angle ), BULLET_DELTA ), oType=OBJECT_TYPE_E_WEAPON, wDamage=10 ) )
           self.state = TANK_STATE_MOVE_TO_ATK
         else:
           self.delayCount -= 1
@@ -153,29 +149,21 @@ class Tank():
 
             if self.direction == DIRECTION_RIGHT:
               e.addObject( Bullet( Point( self.p.x + 6, self.p.y + yOff, self.p.z ),
-                                   Vector( angle, BULLET_DELTA ),
-                                   oType=OBJECT_TYPE_E_WEAPON,
-                                   wDamage=10 ) )
+                                   Vector( angle, BULLET_DELTA ), oType=OBJECT_TYPE_E_WEAPON, wDamage=10 ) )
             else:
               e.addObject( Bullet( Point( self.p.x - 6, self.p.y + yOff, self.p.z ),
-                                   Vector( ( PI - angle ), BULLET_DELTA ),
-                                   oType=OBJECT_TYPE_E_WEAPON,
-                                   wDamage=10 ) )
+                                   Vector( ( PI - angle ), BULLET_DELTA ), oType=OBJECT_TYPE_E_WEAPON, wDamage=10 ) )
           else:
             self.delayCount -= 1
 
       elif self.state == TANK_STATE_GUARD:
         self.v = Vector( 0, 0 )
         dis = e.chopper.p.x - self.p.x
-        if math.fabs( dis ) < 20.0:
+        if math.fabs( dis ) < 50.0:
           self.state = TANK_STATE_ATK_CHOPPER
 
-
     if self.v.magnitude > .01: # if not moving don't change direction
-      if self.v.dx() > 0:
-        self.direction = DIRECTION_RIGHT
-      else:
-        self.direction = DIRECTION_LEFT
+      self.direction = DIRECTION_RIGHT if self.v.dx() > 0 else DIRECTION_LEFT
 
     self.p.move( self.v )
     return True

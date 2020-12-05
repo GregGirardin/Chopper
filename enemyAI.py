@@ -38,7 +38,7 @@ class GameManager():
         e.addStatusMessage( "Destroy enemy buildings ->" )
       e.addStatusMessage( "Level " + str( e.level ) )
 
-      for tank in range( 0, e.level * 2 ):
+      for tank in range( 0, e.level ):
         e.addObject( Tank( Point( MAX_WORLD_X / 2 + tank * 10, 0, 0 ), DIRECTION_LEFT ) )
 
     self.timeToNextEnemy -= 1
