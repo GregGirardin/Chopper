@@ -8,10 +8,10 @@ from missiles import *
 
 # Tank operational states
 TANK_STATE_MOVE_TO_ATK = 0  # go to building
-TANK_STATE_ATK_CHOPPER = 1     # Helo present. Engage
+TANK_STATE_ATK_CHOPPER = 1  # Helo present. Engage
 TANK_STATE_SHELLING = 2     # in position
 TANK_STATE_RELOAD = 3       # out of weapons, go back to reload.
-TANK_STATE_IDLE = 4
+TANK_STATE_GUARD = 4 # Wait here until the chopper comes local
 
 class Tank():
   tankImages = []
@@ -28,9 +28,9 @@ class Tank():
     self.points = POINTS_TANK
     self.showSICount = 0
     self.state = TANK_STATE_MOVE_TO_ATK
-    self.shells = TANK_SHELLS
     self.delayCount = 0 # general delay counter
     self.direction = DIRECTION_LEFT
+    self.tankDelta = TANK_DELTA + float( random.randint( 0, 10 ) ) / 100
 
     if len( Tank.tankImages ) == 0:
       img = Image.open( "images/vehicles/Tank.gif" )
@@ -89,62 +89,48 @@ class Tank():
     # Behavior / AI
     if e.time % 10 == 0: # Don't need to do this every update..
       if self.state == TANK_STATE_MOVE_TO_ATK:
-        dis = distanceToObjectType( e, self.p.x, OBJECT_TYPE_BUILDING )
-        if not dis: # No more city buildings ? attack the chopper
-          self.state = TANK_STATE_ATK_CHOPPER
+
+        dis = distanceToObjectType( e, self.p.x, OBJECT_TYPE_E_BUILDING )
+        if dis < 20: # Guard this building
+          self.state = TANK_STATE_GUARD
         else:
-          if dis > 25:
-            self.v = Vector( 0, TANK_DELTA )
-          elif dis < -25:
-            self.v = Vector( PI, TANK_DELTA )
+          dis = distanceToObjectType( e, self.p.x, OBJECT_TYPE_BUILDING )
+          if not dis: # No more city buildings ? attack the chopper
+            self.state = TANK_STATE_ATK_CHOPPER
           else:
-            self.state = TANK_STATE_SHELLING
+            if dis > 25:
+              self.v = Vector( 0, self.tankDelta )
+            elif dis < -25:
+              self.v = Vector( PI, self.tankDelta )
+            else:
+              self.state = TANK_STATE_SHELLING
 
       elif self.state == TANK_STATE_SHELLING:
         self.v = Vector( 0, 0 )
-        if self.shells == 0:
-          self.state = TANK_STATE_RELOAD
-        else:
-          if self.delayCount <= 0:
-            self.delayCount = 3
-            self.shells -= 1
-            self.cannonAngle = 0
-            angle = Tank.cannonAngles[ self.cannonAngle ]
+        if self.delayCount <= 0:
+          self.delayCount = 3
+          self.cannonAngle = 0
+          angle = Tank.cannonAngles[ self.cannonAngle ]
 
-            if self.direction == DIRECTION_RIGHT:
-              e.addObject( Bullet( Point( self.p.x + 5, self.p.y + 2, self.p.z ),
-                                   Vector( angle, BULLET_DELTA ),
-                                   oType=OBJECT_TYPE_E_WEAPON, wDamage=10 ) )
-            else:
-              e.addObject( Bullet( Point( self.p.x - 5, self.p.y + 2, self.p.z ),
-                                   Vector( ( PI - angle ), BULLET_DELTA ),
-                                   oType=OBJECT_TYPE_E_WEAPON, wDamage=10 ) )
-            self.state = TANK_STATE_MOVE_TO_ATK
+          if self.direction == DIRECTION_RIGHT:
+            e.addObject( Bullet( Point( self.p.x + 5, self.p.y + 2, self.p.z ),
+                                 Vector( angle, BULLET_DELTA ),
+                                 oType=OBJECT_TYPE_E_WEAPON, wDamage=10 ) )
           else:
-            self.delayCount -= 1
-
-      elif self.state == TANK_STATE_RELOAD:
-        dis = distanceToObjectType( e, self.p.x, OBJECT_TYPE_E_BUILDING )
-        if not dis: # No more buildings to reload at.
-          self.state = TANK_STATE_ATK_CHOPPER
+            e.addObject( Bullet( Point( self.p.x - 5, self.p.y + 2, self.p.z ),
+                                 Vector( ( PI - angle ), BULLET_DELTA ),
+                                 oType=OBJECT_TYPE_E_WEAPON, wDamage=10 ) )
+          self.state = TANK_STATE_MOVE_TO_ATK
         else:
-          if dis > 5:
-            self.v = Vector( 0, TANK_DELTA )
-          elif dis < -5:
-            self.v = Vector( PI, TANK_DELTA )
-          else:
-            self.shells = TANK_SHELLS # reloaded
-            self.state = TANK_STATE_MOVE_TO_ATK
+          self.delayCount -= 1
 
       elif self.state == TANK_STATE_ATK_CHOPPER:
-        if self.shells == 0:
-          self.state = TANK_STATE_RELOAD
 
         dis = e.chopper.p.x - self.p.x
         if dis > 50:
-          self.v = Vector( 0, TANK_DELTA )
+          self.v = Vector( 0, self.tankDelta )
         elif dis < -50:
-          self.v = Vector( PI, TANK_DELTA )
+          self.v = Vector( PI, self.tankDelta )
         else:  # Chopper isn't too far. Determine angle and shoot.
           self.v = Vector( 0, 0 )
           theta = vec_dir( math.fabs( dis ), e.chopper.p.y )
@@ -164,7 +150,6 @@ class Tank():
 
           if self.delayCount <= 0:
             self.delayCount = 5
-            self.shells -= 1
 
             if self.direction == DIRECTION_RIGHT:
               e.addObject( Bullet( Point( self.p.x + 6, self.p.y + yOff, self.p.z ),
@@ -179,9 +164,12 @@ class Tank():
           else:
             self.delayCount -= 1
 
-      elif self.state == TANK_STATE_IDLE:
+      elif self.state == TANK_STATE_GUARD:
         self.v = Vector( 0, 0 )
-        # No buildings or buildings to get more shells
+        dis = e.chopper.p.x - self.p.x
+        if math.fabs( dis ) < 20.0:
+          self.state = TANK_STATE_ATK_CHOPPER
+
 
     if self.v.magnitude > .01: # if not moving don't change direction
       if self.v.dx() > 0:

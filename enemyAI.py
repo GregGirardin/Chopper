@@ -38,6 +38,9 @@ class GameManager():
         e.addStatusMessage( "Destroy enemy buildings ->" )
       e.addStatusMessage( "Level " + str( e.level ) )
 
+      for tank in range( 0, e.level * 2 ):
+        e.addObject( Tank( Point( MAX_WORLD_X / 2 + tank * 10, 0, 0 ), DIRECTION_LEFT ) )
+
     self.timeToNextEnemy -= 1
 
     if self.timeToNextEnemy == 0:
@@ -65,7 +68,7 @@ class GameManager():
       elif choice == 5:
         e.addObject( Transport2( Point( spX, 0, 0 ), DIRECTION_LEFT ) )
       elif choice == 6:
-        e.addObject( Truck( Point(spX, 0, 0 ), DIRECTION_LEFT ) )
+        e.addObject( Truck( Point( spX, 0, 0 ), DIRECTION_LEFT ) )
       else: # default to Jeep
         e.addObject( Jeep( Point( spX, 0, 0 ), DIRECTION_LEFT ) )
       if self.totalEnemies == 0:

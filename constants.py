@@ -120,9 +120,6 @@ POINTS_FIGHTER = 50
 POINTS_E_BUILDING = 10 # enemy base building.
 POINTS_BUILDING = 15 # city buildings not bombed after level complete
 
-# Weapon counts
-TANK_SHELLS = 20
-
 # Full weapon payload
 MAX_L_MISSILES = 4.0
 MAX_S_MISSILES = 20.0

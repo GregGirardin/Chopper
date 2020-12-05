@@ -383,8 +383,8 @@ class EBuilding(): # from miscBuildings.gif
       self.showSICount = SHOW_SI_COUNT
       if param.oType == OBJECT_TYPE_WEAPON:
         self.si -= param.wDamage
-        if self.si < 0:
-          e.addObject( Explosion( self.p ) )
+        #if self.si < 0:
+        #  e.addObject( Explosion( self.p ) )
 
   def update( self, e ):
     if self.si < 0.0:
