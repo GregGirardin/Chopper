@@ -31,6 +31,8 @@ class displayEngine():
     self.msgQ = [] # Q of messages to loosely couple messaging
     self.newGameTimer = 0
     self.currentCamOff = -20 # Start from the left initially to show the City
+    self.showDirections = False
+
     self.newGame()
 
   def newGame( self ):
@@ -84,6 +86,7 @@ class displayEngine():
       if not anyEnemies and self.spawningComplete:
         self.allEnemiesDestroyed = True
         self.addStatusMessage( "No More Enemies" )
+        self.addStatusMessage( "Return To Base" )
 
     elif m == MSG_CHOPPER_DESTROYED:
       self.numChoppers -= 1
@@ -121,9 +124,9 @@ class displayEngine():
       else:
         self.newLevel()
 
-    if self.allEnemiesDestroyed and self.enemyBaseDestroyed and not self.missionComplete:
-      self.missionComplete = True
-      self.addStatusMessage( "Return To Base" )
+    elif m == MSG_CHOPPER_AT_BASE:
+      if self.allEnemiesDestroyed:
+        self.qMessage( MSG_MISSION_COMPLETE )
 
   def modScore( self, points ): # add / subtract points to score
     self.score += points
@@ -140,7 +143,6 @@ class displayEngine():
     self.cityDestroyed = False
     self.fadeInCount = 0
 
-    self.missionComplete = False # Just need to return to base to finish level.
     self.levelComplete = False
     self.time = 0
     self.bg_objects = [] # Background objects that don't interact with anything.. no collisions or update
@@ -291,7 +293,27 @@ class displayEngine():
       self.fadeInCount += 20
       e.canvas.create_rectangle( 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT / 2 - self.fadeInCount, fill="black" )
       e.canvas.create_rectangle( 0, SCREEN_HEIGHT / 2 + self.fadeInCount, SCREEN_WIDTH, SCREEN_HEIGHT, fill="black" )
+
+    if self.showDirections:
+      self.displayDirections()
     self.root.update()
+
+  def displayDirections( self ):
+
+    directions = ( "Chopper",
+                   "",
+                   "up/down/left/right - move chopper",
+                   "a : Small Missile",
+                   "s : Large Missile",
+                   "z : Bomb",
+                   "sp : Bullet",
+                   "Clear a level by destroying all enemies and enemy buildings.",
+                   "Chopper can refuel by landing at base",
+                   "Defend the city. Points are lost when vehicles reach the city." )
+
+    for l in range( 0, len( directions ) ):
+      e.canvas.create_text( SCREEN_WIDTH / 2, 50 + 20 * l, text=directions[ l ],
+                            font=tkFont.Font( family='Helvetica', size=20, weight='bold' ) )
 
 def leftHandler( event ):
   e.qMessage( MSG_UI, MSG_ACCEL_L )
@@ -315,6 +337,8 @@ def keyHandler( event ):
     e.qMessage( MSG_UI, MSG_GUN_DOWN )
   elif event.char == " ":
     e.qMessage( MSG_UI, MSG_WEAPON_BULLET )
+  elif event.char == "?":
+    e.showDirections = not e.showDirections
 
 # Main
 e = displayEngine()
@@ -326,5 +350,7 @@ e.root.bind( "<Down>",  downHandler )
 e.root.bind( "<Key>",   keyHandler )
 
 while True:
-  e.update()
-  e.draw()
+    if not e.showDirections:
+      e.update()
+    e.draw()
+

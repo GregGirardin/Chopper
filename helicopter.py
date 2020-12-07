@@ -263,10 +263,8 @@ class Helicopter():
           if obj.oType == OBJECT_TYPE_BASE:
             if math.fabs( self.p.x - obj.p.x ) < 10.0:
               self.onGround = True
-              if e.missionComplete:
-                e.qMessage( MSG_MISSION_COMPLETE )
-              else:
-                obj.processMessage( e, MSG_CHOPPER_AT_BASE, param=self )
+              e.qMessage( MSG_CHOPPER_AT_BASE )
+              obj.processMessage( e, MSG_CHOPPER_AT_BASE, param=self )
 
     else: # Off the ground
       self.onGround = False

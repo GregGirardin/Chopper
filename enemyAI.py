@@ -36,10 +36,11 @@ class GameManager():
       if e.level == 1:
         e.addStatusMessage( "Defend the city" )
         e.addStatusMessage( "Destroy enemy buildings ->" )
+      e.addStatusMessage( "(press '?' for directions)" )
       e.addStatusMessage( "Level " + str( e.level ) )
 
       for tank in range( 0, e.level ):
-        e.addObject( Tank( Point( MAX_WORLD_X / 2 + tank * 10, 0, 0 ), DIRECTION_LEFT ) )
+        e.addObject( Tank( Point( MAX_WORLD_X / 2 + 30 + tank * 10, 0, 0 ), DIRECTION_LEFT ) )
 
     self.timeToNextEnemy -= 1
 
