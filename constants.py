@@ -60,10 +60,10 @@ DIRECTION_FORWARD = 2
 TANK_DELTA        = .2
 CHOPPER_Y_DELTA   = .01
 CHOPPER_X_DELTA   = .02
-JEEP_DELTA        = .3
+JEEP_DELTA        = .4
 TRUCK_DELTA       = .28
-TRANSPORT1_DELTA  = .15
-TRANSPORT2_DELTA  = .22
+TRANSPORT1_DELTA  = .2
+TRANSPORT2_DELTA  = .25
 BOMBER1_DELTA = .5
 BOMBER2_DELTA = .6
 FIGHTER_DELTA = .9
@@ -96,7 +96,12 @@ WEAPON_DAMAGE_MISSLE_S  =  10.0
 WEAPON_DAMAGE_MISSLE_L  =  30.0
 WEAPON_DAMAGE_BOMB      = 100.0
 
-# Initial structural integrity, "health"
+WEAPON_DAMAGE_JEEP  =   10.0
+WEAPON_DAMAGE_T1    =   20.0
+WEAPON_DAMAGE_T2    =   30.0
+WEAPON_DAMAGE_TRUCK =   15.0
+
+# Structural integrity, "health"
 SI_CHOPPER    = 20.0 # The player
 
 SI_JEEP       = 15.0
@@ -118,21 +123,14 @@ POINTS_TANK = 15
 POINTS_BOMBER = 20
 POINTS_FIGHTER = 50
 POINTS_E_BUILDING = 10 # enemy base building.
+POINTS_E_BASE = 50
 POINTS_BUILDING = 15 # city buildings not bombed after level complete
 
-# Full weapon payload
+# Full weapon payload.
 MAX_L_MISSILES = 4.0
 MAX_S_MISSILES = 20.0
 MAX_BULLETS = 100.0
 MAX_BOMBS = 4.0
-
-# When vehicles reach city they do damage based on how many soldiers they carry.
-# For now we just subtract from the score.
-
-JEEP_SOLDIERS = 4
-T1_SOLDIERS = 12
-T2_SOLDIERS = 20
-TRUCK_SOLDIERS = 10
 
 # Resources
 RESOURCE_FIRST = 0

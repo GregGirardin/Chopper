@@ -36,7 +36,6 @@ class GameManager():
       if e.level == 1:
         e.addStatusMessage( "Defend the city" )
         e.addStatusMessage( "Destroy enemy buildings ->" )
-      e.addStatusMessage( "(press '?' for directions)" )
       e.addStatusMessage( "Level " + str( e.level ) )
 
       for tank in range( 0, e.level ):
@@ -52,10 +51,7 @@ class GameManager():
       spX = e.chopper.p.x + 100
       spY = random.randint( 10, 25 )
 
-      if e.cityDestroyed:
-        choice = 2 + random.randint( 0, 2 ) # Fighter or Tank can attack the chopper
-      else:
-        choice = random.randint( 0, 9 )
+      choice = random.randint( 0, 9 )
       if choice == 0:
         e.addObject( Bomber1( Point( spX, spY, 0 ), DIRECTION_LEFT ) )
       elif choice == 1:

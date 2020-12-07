@@ -209,11 +209,22 @@ def collisionCheck( e, obj1, obj2 ):
   #
   # We don't care if two enemy vehicles collide, two friendly weapons collide weapons collide..
 
+  #debugFlag = False
+  #if obj1.oType == OBJECT_TYPE_JEEP or obj2.oType == OBJECT_TYPE_JEEP:
+  #  debugFlag = True
+
   if obj1.oType == OBJECT_TYPE_NONE or obj2.oType == OBJECT_TYPE_NONE:
     return False # Smoke etc, don't want to interact.
 
+  # calculate flags
   weapon = 0
   eWeapon = 0
+  building = 0 # a city building
+  eBuilding = 0 # an enemy building
+  enemy = 0
+
+  chopper = True if( obj1.oType == OBJECT_TYPE_CHOPPER or obj2.oType == OBJECT_TYPE_CHOPPER ) else False
+
   if obj1.oType == OBJECT_TYPE_WEAPON:
     weapon += 1
   if obj2.oType == OBJECT_TYPE_WEAPON:
@@ -224,26 +235,30 @@ def collisionCheck( e, obj1, obj2 ):
   if obj2.oType == OBJECT_TYPE_E_WEAPON:
     eWeapon += 1
 
-  if weapon == 2 or eWeapon == 2 or ( weapon == 0 and eWeapon == 0 ):
+  if obj1.oType == OBJECT_TYPE_BUILDING:
+    building += 1
+  if obj2.oType == OBJECT_TYPE_BUILDING:
+    building += 1
+
+  if obj1.oType == OBJECT_TYPE_E_BUILDING:
+    eBuilding += 1
+  if obj2.oType == OBJECT_TYPE_E_BUILDING:
+    eBuilding += 1
+
+  if( obj1.oType >= OBJECT_TYPE_FIRST_ENEMY and obj1.oType <= OBJECT_TYPE_LAST_ENEMY ):
+    enemy += 1
+  if( obj2.oType >= OBJECT_TYPE_FIRST_ENEMY and obj2.oType <= OBJECT_TYPE_LAST_ENEMY ):
+    enemy += 1
+
+  # Collisions to ignore
+  if weapon == 2 or eWeapon == 2 or \
+     building == 2 or eBuilding == 2 or \
+     enemy == 2 or \
+     ( building and weapon ) or \
+     ( eBuilding and enemy ) or \
+     ( eBuilding and eWeapon ):
     return False
-
-  chopper = True if( obj1.oType == OBJECT_TYPE_CHOPPER or obj2.oType == OBJECT_TYPE_CHOPPER ) else False
-  if chopper and weapon: # Stop shooting yourself
-    return False
-
-  if( ( obj1.oType >= OBJECT_TYPE_FIRST_ENEMY and obj1.oType <= OBJECT_TYPE_LAST_ENEMY ) or
-      ( obj1.oType >= OBJECT_TYPE_FIRST_ENEMY and obj1.oType <= OBJECT_TYPE_LAST_ENEMY ) ):
-     enemy = True
-  else:
-     enemy = False
-
-  if enemy and eWeapon: # enemy doesn't shoot itself
-    return False
-
-  isBuilding = True if( obj1.oType == OBJECT_TYPE_BUILDING or obj2.oType == OBJECT_TYPE_BUILDING ) else False
-  isEBuilding = True if( obj1.oType == OBJECT_TYPE_E_BUILDING or obj2.oType == OBJECT_TYPE_E_BUILDING ) else False
-
-  if( ( weapon and isBuilding ) or( eWeapon and isEBuilding ) ):
+  if( chopper and ( weapon or building or eBuilding ) ) or ( enemy and eWeapon ): # Friendly fire
     return False
 
   return True

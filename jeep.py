@@ -6,7 +6,7 @@ from Tkinter import *
 from PIL import ImageTk, Image
 from copy import copy
 
-# If vehicles make it to a city building they release soldiers and cause casualties
+# If vehicles make it to a city building they do damage to the building at turn around
 
 # Jeeps and trucks
 class Jeep():
@@ -22,7 +22,9 @@ class Jeep():
     self.si = self.siMax = SI_JEEP
     self.points = POINTS_JEEP
     self.showSICount = 0
-    self.soldiers = JEEP_SOLDIERS
+    # For vehicles wDamage is the damage we do to a building when we contact it
+    # it then turns around.
+    self.wDamage = WEAPON_DAMAGE_JEEP
 
     if len( Jeep.images ) == 0:
       img = Image.open( "images/vehicles/Jeep.png" )
@@ -38,11 +40,14 @@ class Jeep():
 
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
-      self.showSICount = SHOW_SI_COUNT
       if param.oType == OBJECT_TYPE_WEAPON:
+        self.showSICount = SHOW_SI_COUNT
         self.si -= param.wDamage
         if self.si < 0:
           e.addObject( BombExplosion( self.p ) )
+      if param.oType == OBJECT_TYPE_BUILDING:
+        # building records the damage we do to it.. turn around.
+        self.v = Vector( 0, JEEP_DELTA )
 
   # Draw wheels with circles instead of using sprites.
   def drawWheel( self, c, x, y, radius, angle ):
@@ -79,16 +84,9 @@ class Jeep():
         self.imgIx = 1 # angle down
       self.bounceCount -= 1
 
-    if self.p.x < MIN_WORLD_X:
-      e.qMessage( MSG_SOLDIERS_TO_CITY, self.soldiers )
-      self.soldiers = 0
+    if self.p.x < MIN_WORLD_X:  # Should not happen with current rules. Game ends when city destroyed.
       self.v = Vector( 0, JEEP_DELTA )
-    elif self.p.x > MAX_WORLD_X + 100:
-      if e.cityDestroyed == True:
-        e.addStatusMessage( "Jeep Left Theater" )
-        e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
-        return False
-      self.soldiers = JEEP_SOLDIERS
+    elif self.p.x > MAX_WORLD_X / 2:
       self.v = Vector( PI, JEEP_DELTA )
 
     self.p.move( self.v )
@@ -121,7 +119,7 @@ class Transport1():
 
     self.points = POINTS_TRANSPORT
     self.showSICount = 0
-    self.soldiers = T1_SOLDIERS
+    self.wDamage = WEAPON_DAMAGE_T1
 
     if len( Transport1.images ) == 0:
       img = Image.open( "images/vehicles/transport1.gif" )
@@ -134,12 +132,14 @@ class Transport1():
 
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
-      self.showSICount = SHOW_SI_COUNT
-
       if param.oType == OBJECT_TYPE_WEAPON:
+        self.showSICount = SHOW_SI_COUNT
         self.si -= param.wDamage
         if self.si < 0:
           e.addObject( BombExplosion( self.p ) )
+      if param.oType == OBJECT_TYPE_BUILDING:
+        # building records the damage we do to it.. turn around.
+        self.v = Vector( 0, JEEP_DELTA )
 
   # Draw wheels with circles instead of using sprites.
   def drawWheel( self, c, x, y, radius, angle ):
@@ -163,17 +163,9 @@ class Transport1():
       e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
       return False
 
-    if self.p.x < MIN_WORLD_X:
-      e.qMessage( MSG_SOLDIERS_TO_CITY, self.soldiers )
-      self.soldiers = 0
+    if self.p.x < MIN_WORLD_X:  # Should not happen with current rules. Game ends when city destroyed.
       self.v = Vector( 0, TRANSPORT1_DELTA )
-
-    elif self.p.x > MAX_WORLD_X + 100:
-      if e.cityDestroyed == True:
-        e.addStatusMessage( "Transport Left Theater" )
-        e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
-        return False
-      self.soldiers = T1_SOLDIERS
+    elif self.p.x > MAX_WORLD_X / 2:
       self.v = Vector( PI, TRANSPORT1_DELTA )
 
     self.p.move( self.v )
@@ -204,7 +196,7 @@ class Transport2():
     self.si = self.siMax = SI_TRANSPORT2
     self.points = POINTS_TRANSPORT
     self.showSICount = 0
-    self.soldiers = T2_SOLDIERS
+    self.wDamage = WEAPON_DAMAGE_T2
 
     if len( Transport2.images ) == 0:
       img = Image.open( "images/vehicles/transport2.gif" )
@@ -217,12 +209,14 @@ class Transport2():
 
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
-      self.showSICount = SHOW_SI_COUNT
-
       if param.oType == OBJECT_TYPE_WEAPON:
+        self.showSICount = SHOW_SI_COUNT
         self.si -= param.wDamage
         if self.si < 0:
           e.addObject( BombExplosion( self.p ) )
+      if param.oType == OBJECT_TYPE_BUILDING:
+        # building records the damage we do to it.. turn around.
+        self.v = Vector( 0, JEEP_DELTA )
 
   def drawWheel( self, c, x, y, radius, angle ):
     c.create_oval( x - radius, y - radius, x + radius, y + radius, fill="#111" )
@@ -245,16 +239,9 @@ class Transport2():
       e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
       return False
 
-    if self.p.x < MIN_WORLD_X:
-      e.qMessage( MSG_SOLDIERS_TO_CITY, self.soldiers )
-      self.soldiers = 0
+    if self.p.x < MIN_WORLD_X: # Should not happen with current rules. Game ends when city destroyed.
       self.v = Vector( 0, TRANSPORT2_DELTA )
-    elif self.p.x > MAX_WORLD_X + 100:
-      if e.cityDestroyed == True:
-        e.addStatusMessage( "Transport Left Theater" )
-        e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
-        return False
-      self.soldiers = T2_SOLDIERS
+    elif self.p.x > MAX_WORLD_X / 2:
       self.v = Vector( PI, TRANSPORT2_DELTA )
     self.p.move( self.v )
 
@@ -284,7 +271,7 @@ class Truck():
     self.si = self.siMax = SI_TRUCK
     self.points = POINTS_TRUCK
     self.showSICount = 0
-    self.soldiers = TRUCK_SOLDIERS
+    self.wDamage = WEAPON_DAMAGE_TRUCK
 
     if len( Truck.images ) == 0:
       img = Image.open( "images/vehicles/Truck1.gif" )
@@ -297,12 +284,14 @@ class Truck():
 
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
-      self.showSICount = SHOW_SI_COUNT
-
       if param.oType == OBJECT_TYPE_WEAPON:
+        self.showSICount = SHOW_SI_COUNT
         self.si -= param.wDamage
         if self.si < 0:
           e.addObject( BombExplosion( self.p ) )
+      if param.oType == OBJECT_TYPE_BUILDING:
+        # building records the damage we do to it.. turn around.
+        self.v = Vector( 0, JEEP_DELTA )
 
   # Draw wheels with circles instead of using sprites.
   def drawWheel( self, c, x, y, radius, angle ):
@@ -326,16 +315,9 @@ class Truck():
       e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
       return False
 
-    if self.p.x < MIN_WORLD_X:
-      e.qMessage( MSG_SOLDIERS_TO_CITY, self.soldiers )
-      self.soldiers = 0
+    if self.p.x < MIN_WORLD_X:  # Should not happen with current rules. Game ends when city destroyed.
       self.v = Vector( 0, TRUCK_DELTA )
-    elif self.p.x > MAX_WORLD_X + 100:
-      if e.cityDestroyed == True:
-        e.addStatusMessage( "Truck Left Theater" )
-        e.qMessage( MSG_ENEMY_LEFT_BATTLEFIELD, self )
-        return False
-      self.soldiers = TRUCK_SOLDIERS
+    elif self.p.x > MAX_WORLD_X / 2:
       self.v = Vector( PI, TRUCK_DELTA )
 
     self.p.move( self.v )

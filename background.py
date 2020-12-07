@@ -293,10 +293,10 @@ class CityBuildings():
 
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
-      if param.oType == OBJECT_TYPE_E_WEAPON:
-        self.si -= param.wDamage
-        if self.si < 0:
-          e.addObject( Explosion( self.p ) )
+      #if param.oType == OBJECT_TYPE_E_WEAPON:
+      self.si -= param.wDamage
+      if self.si < 0:
+        e.addObject( Explosion( self.p ) )
 
   def update( self, e ):
     if self.si < 0.0:

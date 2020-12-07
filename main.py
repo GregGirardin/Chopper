@@ -31,7 +31,7 @@ class displayEngine():
     self.msgQ = [] # Q of messages to loosely couple messaging
     self.newGameTimer = 0
     self.currentCamOff = -20 # Start from the left initially to show the City
-    self.showDirections = False
+    self.showDirections = True
 
     self.newGame()
 
@@ -61,7 +61,7 @@ class displayEngine():
           break
       if not anyBuildings:
         self.addStatusMessage( "City Destroyed" )
-        self.cityDestroyed = True
+        self.gameOver()
       else:
         self.addStatusMessage( "City Bombed" )
 
@@ -75,6 +75,7 @@ class displayEngine():
       if not anyBuildings:
         self.enemyBaseDestroyed = True
         self.addStatusMessage( "Enemy Base Destroyed" )
+        self.modScore( POINTS_E_BASE )
 
     elif m == MSG_ENEMY_LEFT_BATTLEFIELD:
       self.modScore( param.points )
@@ -85,15 +86,14 @@ class displayEngine():
           break
       if not anyEnemies and self.spawningComplete:
         self.allEnemiesDestroyed = True
-        self.addStatusMessage( "No More Enemies" )
-        self.addStatusMessage( "Return To Base" )
+        self.addStatusMessage( "No More Enemies : Return to Base" )
 
     elif m == MSG_CHOPPER_DESTROYED:
       self.numChoppers -= 1
       if self.numChoppers == 0:
         self.gameOver()
       else:
-        self.addStatusMessage( "Chopper Destroyed" )
+        self.addStatusMessage( "Chopper Destroyed %s remaining" % self.numChoppers )
         self.currentCamOff = self.chopper.p.x # So the camera pans from where we are back to base.
         self.chopper = Helicopter( 0, 0, 1 )
         self.objects.append( self.chopper )
@@ -103,9 +103,8 @@ class displayEngine():
       self.spawningComplete = True
 
     elif m == MSG_SOLDIERS_TO_CITY:
-      if not self.cityDestroyed:
-        self.addStatusMessage( "Casualties!" )
-        self.modScore( -param * 5 )
+      self.addStatusMessage( "Casualties!" )
+      self.modScore( -param * 5 )
 
     elif m == MSG_MISSION_COMPLETE:
       self.addStatusMessage( "Level Complete." )
@@ -140,7 +139,6 @@ class displayEngine():
     self.enemyBaseDestroyed = False
     self.spawningComplete = False
     self.allEnemiesDestroyed = False
-    self.cityDestroyed = False
     self.fadeInCount = 0
 
     self.levelComplete = False
@@ -201,7 +199,7 @@ class displayEngine():
     self.objects.sort( key=increaseZ )
 
   # Q's a status message to be displayed at the center of the screen.
-  def addStatusMessage( self, m, time=25 ):
+  def addStatusMessage( self, m, time=50 ):
     self.statusMessages.insert( 0, ( m, time ) ) # list contains (string,time) tuples. Newest to head, pull from end
 
   def gameOver( self ):
@@ -274,15 +272,16 @@ class displayEngine():
           e.canvas.create_rectangle( p.x - 1, p.y - 1, p.x + 1, p.y + 1, outline="red" )
           displayColRect( e, o )
 
-    if self.statusMsgTime > 0:
-      self.statusMsgTime -= 1
-      e.canvas.create_text( SCREEN_WIDTH / 2, SCREEN_HEIGHT / 3,
-                            text=self.statusMsgCurrent, fill='red',
-                            font=tkFont.Font( family='Helvetica', size=28, weight='bold' ) )
-    elif self.statusMessages:
-      m = self.statusMessages.pop()
-      self.statusMsgCurrent = m[ 0 ]
-      self.statusMsgTime = m[ 1 ]
+    if not self.showDirections:
+      if self.statusMsgTime > 0:
+        self.statusMsgTime -= 1
+        e.canvas.create_text( SCREEN_WIDTH / 2, SCREEN_HEIGHT / 3,
+                              text=self.statusMsgCurrent, fill='red',
+                              font=tkFont.Font( family='Helvetica', size=28, weight='bold' ) )
+      elif self.statusMessages:
+        m = self.statusMessages.pop()
+        self.statusMsgCurrent = m[ 0 ]
+        self.statusMsgTime = m[ 1 ]
 
     t = "%s" % self.score
     e.canvas.create_text( SCREEN_WIDTH / 2, 10, text=t )
@@ -307,9 +306,14 @@ class displayEngine():
                    "s : Large Missile",
                    "z : Bomb",
                    "sp : Bullet",
-                   "Clear a level by destroying all enemies and enemy buildings.",
-                   "Chopper can refuel by landing at base",
-                   "Defend the city. Points are lost when vehicles reach the city." )
+                   "e/d : Gun up/down",
+                   "? : This screen",
+                   "",
+                   "Finish level by destroying all enemies and returning to base.",
+                   "Refuel by landing at base",
+                   "Game ends if you lose all choppers, finish all %s levels, or the city is destroyed" % NUM_LEVELS,
+                   "",
+                   "Press <Space>" )
 
     for l in range( 0, len( directions ) ):
       e.canvas.create_text( SCREEN_WIDTH / 2, 50 + 20 * l, text=directions[ l ],
@@ -325,6 +329,8 @@ def downHandler( event ):
   e.qMessage( MSG_UI, MSG_ACCEL_D )
 
 def keyHandler( event ):
+  e.showDirections = False
+
   if event.char == "a":
     e.qMessage( MSG_UI, MSG_WEAPON_MISSILE_S )
   elif event.char == "s":
@@ -338,7 +344,7 @@ def keyHandler( event ):
   elif event.char == " ":
     e.qMessage( MSG_UI, MSG_WEAPON_BULLET )
   elif event.char == "?":
-    e.showDirections = not e.showDirections
+    e.showDirections = True
 
 # Main
 e = displayEngine()
@@ -349,8 +355,9 @@ e.root.bind( "<Up>",    upHandler )
 e.root.bind( "<Down>",  downHandler )
 e.root.bind( "<Key>",   keyHandler )
 
+e.update() # do once initially, then wait until user presses space to clear the instructions screen
 while True:
-    if not e.showDirections:
-      e.update()
-    e.draw()
+  e.draw()
+  if not e.showDirections:
+    e.update()
 

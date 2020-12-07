@@ -20,6 +20,7 @@ class Bomber1():
     self.bombs = 2
     self.target_y = p.y
     self.showSICount = 0
+    self.wDamage = 0
 
     if len( Bomber1.images ) == 0:
       img = Image.open( "images/vehicles/Bomber1.png" )
@@ -97,6 +98,7 @@ class Bomber2():
     self.showSICount = 0
     self.target_y = p.y
     self.bombs = 1
+    self.wDamage = 0
 
     if len( Bomber2.images ) == 0:
       img = Image.open( "images/vehicles/Bomber2.gif" )
@@ -175,6 +177,8 @@ class Fighter():
     self.target_y = p.y
     self.showSICount = 0
     self.angleUp = False # we have a sprite angled for this object.
+    self.wDamage = 0
+
 
     if len( Fighter.images ) == 0:
       img = Image.open( "images/vehicles/Fighter.gif" )

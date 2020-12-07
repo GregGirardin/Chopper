@@ -31,6 +31,7 @@ class Tank():
     self.delayCount = 0 # general delay counter
     self.direction = DIRECTION_LEFT
     self.tankDelta = TANK_DELTA + float( random.randint( 0, 10 ) ) / 100
+    self.wDamage = 0 # it damages by shooting..
 
     if len( Tank.tankImages ) == 0:
       img = Image.open( "images/vehicles/Tank.gif" )
@@ -73,8 +74,8 @@ class Tank():
 
   def processMessage( self, e, message, param=None ):
     if message == MSG_COLLISION_DET:
-      self.showSICount = SHOW_SI_COUNT
       if param.oType == OBJECT_TYPE_WEAPON:
+        self.showSICount = SHOW_SI_COUNT
         self.si -= param.wDamage
         if self.si < 0:
           e.addObject( Explosion( self.p ) )
