@@ -17,6 +17,8 @@ sp: bullet
 e/d: aim cannon
 ?: instructions/pause
 
+Run main.py
+
 Greg Girardin
 Nashua, NH
 December 2020
