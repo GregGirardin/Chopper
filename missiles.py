@@ -2,7 +2,7 @@ import constants
 import math, random
 from utils import *
 from explosions import *
-from Tkinter import *
+from tkinter import *
 from PIL import ImageTk, Image
 from copy import copy
 

@@ -1,7 +1,7 @@
 import constants
 import math, random
 from utils import *
-from Tkinter import *
+from tkinter import *
 from PIL import ImageTk, Image
 from explosions import *
 from missiles import *
@@ -105,7 +105,7 @@ class Bomber2():
       SW = 256
       for y in range( 0, 2 ):
         crop = img.crop( ( 0, y * SW, 640, y * SW + SW ) )
-        crop = crop.resize( ( 640 / 3, 256 / 3 ) )
+        crop = crop.resize( ( 213, 85 ) )
         crop = ImageTk.PhotoImage( crop )
         Bomber2.images.append( crop )
 
@@ -186,7 +186,7 @@ class Fighter():
       for y in range( 0, 2 ):
         for x in range( 0, 2 ):
           crop = img.crop( ( x * SW, y * 128, x * SW + SW, y * 128 + 128 ) )
-          crop = crop.resize( ( SW / 3, 128 / 3 ) )
+          crop = crop.resize( ( int( SW / 3 ), int( 128 / 3 ) ) )
           crop = ImageTk.PhotoImage( crop )
           Fighter.images.append( crop )
 

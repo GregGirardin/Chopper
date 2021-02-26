@@ -1,7 +1,7 @@
 import constants
 import math, random
 from utils import *
-from Tkinter import *
+from tkinter import *
 from PIL import ImageTk, Image
 from explosions import *
 from missiles import *

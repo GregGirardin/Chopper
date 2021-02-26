@@ -169,7 +169,7 @@ def collisionCheck( e, obj1, obj2 ):
   global WarningFlag
 
   if WarningFlag:
-    print "fix collisionCheck"
+    print( "fix collisionCheck" )
     WarningFlag = False
 
   # collision boxes in world coords

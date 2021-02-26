@@ -2,7 +2,7 @@ import constants
 import math, random
 from utils import *
 from explosions import *
-from Tkinter import *
+from tkinter import *
 from PIL import ImageTk, Image
 from copy import copy
 
@@ -203,7 +203,7 @@ class Transport2():
       SW = 512
       for x in range( 0, 2 ):
         crop = img.crop( ( x * SW, 0, x * SW + SW, 256 ) )
-        crop = crop.resize( ( 512 / 2, 256 / 2) )
+        crop = crop.resize( ( 256, 128 ) )
         crop = ImageTk.PhotoImage( crop )
         Transport2.images.append( crop )
 
@@ -278,7 +278,7 @@ class Truck():
       SW = 512
       for x in range( 0, 2 ):
         crop = img.crop( ( x * SW, 0, x * SW + SW, 256 ) )
-        crop = crop.resize( ( 512 / 3, 256 / 3 ) )
+        crop = crop.resize( ( 171, 85 ) )
         crop = ImageTk.PhotoImage( crop )
         Truck.images.append( crop )
 

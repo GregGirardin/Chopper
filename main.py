@@ -1,6 +1,5 @@
 #!/usr/bin/python
-from Tkinter import *
-import tkFont
+import tkinter.font as tkFont
 from constants import *
 import time, math
 from utils import *
@@ -360,4 +359,5 @@ while True:
   e.draw()
   if not e.showDirections:
     e.update()
+  time.sleep( .01 )
 

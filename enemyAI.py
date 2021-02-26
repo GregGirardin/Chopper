@@ -1,6 +1,6 @@
 #!/usr/bin/python
-from Tkinter import *
-import tkFont
+from tkinter import *
+import tkinter.font as tkFont
 from constants import *
 import time, math
 from utils import *
